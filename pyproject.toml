@@ -1,0 +1,6 @@
+[project]
+name = "mini-gpt-from-scratch"
+requires-python = ">=3.11"
+dependencies = []
+
+# 后续可在 dependencies 中添加 PyTorch、PyYAML、pytest 等依赖。

@@ -1,0 +1,15 @@
+.venv/
+venv/
+**pycache**/
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+checkpoints/
+runs/
+logs/
+data/raw/*
+data/processed/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
