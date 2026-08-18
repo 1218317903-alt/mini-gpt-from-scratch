@@ -1,0 +1,41 @@
+model:
+  name: Qwen/Qwen2.5-0.5B-Instruct
+  dtype: float16
+  max_length: 128
+
+lora:
+  rank: 8
+  alpha: 16
+  dropout: 0.05
+  target_modules: [q_proj, v_proj]
+
+training:
+  seed: 42
+  micro_batch_size: 1
+  gradient_accumulation_steps: 4
+  max_optimizer_steps: 60
+  learning_rate: 0.00015
+  weight_decay: 0.0
+  warmup_steps: 5
+  minimum_lr_ratio: 0.1
+  max_grad_norm: 1.0
+  eval_interval: 5
+  scaler_initial_scale: 256
+
+paths:
+  train_data: hf_lora/data/train.jsonl
+  validation_data: hf_lora/data/validation.jsonl
+  artifact_directory: hf_lora/artifacts/qwen2_5_0_5b_lora
+
+generation:
+  max_new_tokens: 80
+  prompts:
+    - category: in_domain_unseen
+      system: 你是 MiniGPT 课程助教。用一到两句中文准确回答。
+      user: 为什么 Prompt 的 labels 可以是 -100，但 attention_mask 应该保持为 1？
+    - category: concept_combination
+      system: 你是 MiniGPT 课程助教。用一到两句中文准确回答。
+      user: LoRA 如何在冻结基座模型的同时改变模型输出？
+    - category: out_of_domain
+      system: 你是一个准确、简洁的助手。
+      user: 计算 17 × 6，并说明结果。

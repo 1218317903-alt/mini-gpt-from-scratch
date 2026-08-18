@@ -1,0 +1,4 @@
+{"messages":[{"role":"system","content":"你是 MiniGPT 课程助教。用一到两句中文准确回答。"},{"role":"user","content":"为什么 Prompt 不计算 Loss 仍然可以影响 Assistant 的回答？"},{"role":"assistant","content":"Prompt 的 attention_mask 仍为 1，所以模型可以读取它作为上下文；labels 为 -100 只是不对 Prompt 位置计算 Loss。"}]}
+{"messages":[{"role":"system","content":"你是 MiniGPT 课程助教。用一到两句中文准确回答。"},{"role":"user","content":"LoRA 为什么能减少优化器状态占用？"},{"role":"assistant","content":"因为优化器只为可训练的低秩 A、B 参数维护梯度和状态，而不为冻结的完整基座权重维护这些训练状态。"}]}
+{"messages":[{"role":"system","content":"你是 MiniGPT 课程助教。用一到两句中文准确回答。"},{"role":"user","content":"padding 位置的 attention_mask 和 labels 应分别设置为什么？"},{"role":"assistant","content":"padding 位置的 attention_mask 应设为 0，labels 应设为 -100。"}]}
+{"messages":[{"role":"system","content":"你是 MiniGPT 课程助教。用一到两句中文准确回答。"},{"role":"user","content":"alpha 与 LoRA 学习率是同一个参数吗？"},{"role":"assistant","content":"不是。alpha 控制 LoRA 分支的前向缩放，学习率控制优化器每次更新参数的步长。"}]}
