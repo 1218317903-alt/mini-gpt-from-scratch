@@ -212,6 +212,13 @@ python train.py `
 uv run pytest -q
 ```
 
+CI 会同时统计 `minigpt` 与 `hf_lora` 的分支覆盖率，并以 60% 作为当前防回退
+基线。查看本地覆盖率明细：
+
+```powershell
+uv run pytest -q --cov=minigpt --cov=hf_lora --cov-report=term-missing
+```
+
 测试覆盖：
 
 - 数据集错位和 Batch 形状

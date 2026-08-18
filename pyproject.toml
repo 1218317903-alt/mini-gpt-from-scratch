@@ -52,5 +52,6 @@ source = ["minigpt", "hf_lora"]
 branch = true
 
 [tool.coverage.report]
+fail_under = 60
 show_missing = true
 skip_covered = true

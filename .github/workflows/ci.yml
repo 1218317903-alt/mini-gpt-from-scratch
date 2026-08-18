@@ -44,4 +44,4 @@ jobs:
         run: uv run python -c "import sys, torch; print(sys.version); print(torch.__version__)"
 
       - name: Run test suite
-        run: uv run pytest -q
+        run: uv run pytest -q --cov=minigpt --cov=hf_lora --cov-report=term-missing
