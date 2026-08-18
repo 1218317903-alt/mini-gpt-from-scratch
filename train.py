@@ -2,7 +2,9 @@
 
 import argparse
 from dataclasses import asdict, replace
+import logging
 from pathlib import Path
+import sys
 import time
 
 import torch
@@ -17,6 +19,13 @@ from minigpt.config import (
     load_training_config,
 )
 from minigpt.dataset import CharacterLanguageModelDataset
+from minigpt.experiment import (
+    LOGGER_NAME,
+    ExperimentRun,
+    collect_environment,
+    configure_training_logger,
+    create_run_id,
+)
 from minigpt.model import MiniGPT, count_parameters
 from minigpt.tokenizer import CharacterTokenizer
 from minigpt.trainer import (
@@ -39,6 +48,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent
 DEFAULT_CONFIG_PATH = (
     PROJECT_ROOT / "configs" / "tiny_shakespeare.yaml"
 )
+LOGGER = logging.getLogger(LOGGER_NAME)
 
 
 def parse_args() -> argparse.Namespace:
@@ -67,6 +77,12 @@ def parse_args() -> argparse.Namespace:
         type=Path,
         default=PROJECT_ROOT / "checkpoints",
         help="Checkpoint 输出目录。",
+    )
+    parser.add_argument(
+        "--run-dir",
+        type=Path,
+        default=None,
+        help="实验记录目录；默认自动创建 runs/<run-id>。",
     )
     parser.add_argument("--dropout", type=float, default=0.0)
     parser.add_argument("--embedding-dim", type=int, default=None)
@@ -261,7 +277,7 @@ def run_tiny_batch_overfit_test(
         training_config.overfit_steps // 5,
     )
 
-    print("开始极小 Batch 过拟合测试。")
+    LOGGER.info("开始极小 Batch 过拟合测试。")
 
     for step in range(
         1,
@@ -281,7 +297,7 @@ def run_tiny_batch_overfit_test(
         final_loss = loss_value
 
         if step == 1 or step % report_interval == 0:
-            print(
+            LOGGER.info(
                 f"overfit_step={step} "
                 f"loss={loss_value:.4f} "
                 f"gradient_norm={gradient_norm:.4f}"
@@ -296,7 +312,7 @@ def run_tiny_batch_overfit_test(
             "极小 Batch 过拟合失败：Loss 没有下降。"
         )
 
-    print(
+    LOGGER.info(
         "极小 Batch 过拟合通过："
         f"{initial_loss:.4f} -> {final_loss:.4f}"
     )
@@ -314,6 +330,42 @@ def main() -> None:
         data_config,
         model_config,
     )
+
+    checkpoint_dir = args.checkpoint_dir
+    if not checkpoint_dir.is_absolute():
+        checkpoint_dir = PROJECT_ROOT / checkpoint_dir
+    run_dir = args.run_dir
+    if run_dir is None:
+        run_dir = PROJECT_ROOT / "runs" / create_run_id(PROJECT_ROOT)
+    elif not run_dir.is_absolute():
+        run_dir = PROJECT_ROOT / run_dir
+
+    config_snapshot = {
+        "data": normalize_config(data_config),
+        "model": normalize_config(model_config),
+        "training": normalize_config(training_config),
+        "runtime": {
+            "dropout": args.dropout,
+            "gradient_accumulation_steps": (
+                args.gradient_accumulation_steps
+            ),
+            "warmup_steps": args.warmup_steps,
+            "warmup_start_factor": args.warmup_start_factor,
+            "cosine_decay": args.cosine_decay,
+            "minimum_learning_rate": args.min_learning_rate,
+            "precision": args.precision,
+            "compile": args.compile,
+            "compile_mode": args.compile_mode,
+        },
+        "paths": {
+            "source_config": str(config_path),
+            "run_dir": str(run_dir),
+            "checkpoint_dir": str(checkpoint_dir),
+            "resume_checkpoint": (
+                None if args.resume is None else str(args.resume)
+            ),
+        },
+    }
 
     set_random_seed(training_config.seed)
 
@@ -351,6 +403,18 @@ def main() -> None:
 
     device = select_device()
     amp_dtype, scaler = resolve_amp(args.precision, device)
+    experiment = ExperimentRun.create(
+        run_dir=run_dir,
+        config=config_snapshot,
+        environment=collect_environment(
+            PROJECT_ROOT,
+            command=[sys.executable, *sys.argv],
+        ),
+        allow_existing=args.resume is not None,
+    )
+    configure_training_logger(experiment)
+    LOGGER.info("run_dir=%s", run_dir)
+    LOGGER.info("checkpoint_dir=%s", checkpoint_dir)
 
     if (
         args.resume is None
@@ -398,9 +462,6 @@ def main() -> None:
             cosine_decay=args.cosine_decay,
         )
 
-    checkpoint_dir = args.checkpoint_dir
-    if not checkpoint_dir.is_absolute():
-        checkpoint_dir = PROJECT_ROOT / checkpoint_dir
     latest_path = checkpoint_dir / "latest.pt"
     best_path = checkpoint_dir / "best.pt"
 
@@ -445,28 +506,9 @@ def main() -> None:
             checkpoint["best_validation_loss"]
         )
 
-        print(
+        LOGGER.info(
             f"已恢复训练：global_step={global_step}"
         )
-
-    config_snapshot = {
-        "data": normalize_config(data_config),
-        "model": normalize_config(model_config),
-        "training": normalize_config(training_config),
-        "stage_five_runtime": {
-            "dropout": args.dropout,
-            "gradient_accumulation_steps": (
-                args.gradient_accumulation_steps
-            ),
-            "warmup_steps": args.warmup_steps,
-            "warmup_start_factor": args.warmup_start_factor,
-            "cosine_decay": args.cosine_decay,
-            "minimum_learning_rate": args.min_learning_rate,
-            "precision": args.precision,
-            "compile": args.compile,
-            "compile_mode": args.compile_mode,
-        },
-    }
     tokenizer_info = build_tokenizer_info(tokenizer)
 
     batch_iterator = iter(train_loader)
@@ -478,7 +520,7 @@ def main() -> None:
     processed_tokens = 0
     training_elapsed = 0.0
     last_step = global_step
-    print(
+    LOGGER.info(
         f"device={device} precision={args.precision} "
         f"parameters={count_parameters(model)} "
         f"micro_batch_size={data_config.batch_size} "
@@ -486,6 +528,20 @@ def main() -> None:
         f"compiled={args.compile} compile_mode={args.compile_mode} "
         f"effective_batch_size="
         f"{data_config.batch_size * args.gradient_accumulation_steps}"
+    )
+    experiment.record(
+        "run_started",
+        device=str(device),
+        precision=args.precision,
+        parameters=count_parameters(model),
+        micro_batch_size=data_config.batch_size,
+        accumulation_steps=args.gradient_accumulation_steps,
+        effective_batch_size=(
+            data_config.batch_size * args.gradient_accumulation_steps
+        ),
+        compiled=args.compile,
+        compile_mode=args.compile_mode,
+        starting_step=global_step,
     )
     if device.type == "cuda":
         torch.cuda.reset_peak_memory_stats(device)
@@ -524,7 +580,8 @@ def main() -> None:
         )
 
         if not optimizer_updated:
-            print("FP16 梯度出现 Inf/NaN，本次参数更新已跳过。")
+            LOGGER.warning("FP16 梯度出现 Inf/NaN，本次参数更新已跳过。")
+            experiment.record("optimizer_step_skipped", reason="inf_or_nan")
             continue
 
         global_step += 1
@@ -541,6 +598,17 @@ def main() -> None:
             if device.type == "cuda"
             else None
         )
+        experiment.record(
+            "train_step",
+            step=global_step,
+            train_loss=float(train_loss.item()),
+            learning_rate=float(learning_rate_used),
+            gradient_norm=float(gradient_norm),
+            processed_tokens=processed_tokens,
+            tokens_per_second=float(tokens_per_second),
+            peak_memory_mib=peak_memory_mib,
+            training_time_seconds=float(training_elapsed),
+        )
 
         if (
             global_step % training_config.log_interval == 0
@@ -551,7 +619,7 @@ def main() -> None:
                 if peak_memory_mib is None
                 else f"{peak_memory_mib:.2f}"
             )
-            print(
+            LOGGER.info(
                 f"step={global_step} "
                 f"train_loss={train_loss.item():.4f} "
                 f"validation_loss=not_evaluated "
@@ -573,12 +641,20 @@ def main() -> None:
                 max_batches=training_config.eval_steps,
             )
 
-            print(
+            LOGGER.info(
                 f"step={global_step} "
                 f"validation_loss={validation_loss:.4f}"
             )
 
-            if validation_loss < best_validation_loss:
+            is_best = validation_loss < best_validation_loss
+            experiment.record(
+                "validation",
+                step=global_step,
+                validation_loss=float(validation_loss),
+                is_best=is_best,
+            )
+
+            if is_best:
                 best_validation_loss = validation_loss
                 save_checkpoint(
                     path=best_path,
@@ -594,7 +670,14 @@ def main() -> None:
                     seed=training_config.seed,
                     scaler=scaler,
                 )
-                print(
+                experiment.record(
+                    "checkpoint_saved",
+                    step=global_step,
+                    kind="best",
+                    path=str(best_path),
+                    best_validation_loss=float(best_validation_loss),
+                )
+                LOGGER.info(
                     f"best checkpoint 已保存：{best_path}"
                 )
 
@@ -615,7 +698,14 @@ def main() -> None:
                 seed=training_config.seed,
                 scaler=scaler,
             )
-            print(
+            experiment.record(
+                "checkpoint_saved",
+                step=global_step,
+                kind="latest",
+                path=str(latest_path),
+                best_validation_loss=float(best_validation_loss),
+            )
+            LOGGER.info(
                 f"latest checkpoint 已保存：{latest_path}"
             )
 
@@ -632,7 +722,15 @@ def main() -> None:
             seed=training_config.seed,
             scaler=scaler,
         )
-        print(
+        experiment.record(
+            "run_completed",
+            step=last_step,
+            processed_tokens=processed_tokens,
+            training_time_seconds=float(training_elapsed),
+            best_validation_loss=float(best_validation_loss),
+            latest_checkpoint=str(latest_path),
+        )
+        LOGGER.info(
             f"训练结束，latest checkpoint 已保存：{latest_path}"
         )
 

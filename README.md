@@ -98,6 +98,30 @@ checkpoints/best.pt
 checkpoints/latest.pt
 ```
 
+每次训练还会自动创建 `runs/<run-id>/`，记录实际生效配置、软硬件环境、
+Git 状态、结构化指标和文本日志：
+
+```text
+runs/<run-id>/
+├── config.yaml
+├── environment.json
+├── metrics.jsonl
+└── train.log
+```
+
+需要把一次正式实验的全部产物放在同一目录时，可以同时指定运行目录与
+Checkpoint 目录：
+
+```powershell
+uv run python train.py `
+  --config configs/tiny_shakespeare.yaml `
+  --run-dir runs/baseline `
+  --checkpoint-dir runs/baseline/checkpoints
+```
+
+已有 `config.yaml` 或 `environment.json` 的运行目录不会被新实验静默覆盖；
+只有配合 `--resume` 时才允许继续写入，并额外保存本次恢复的环境快照。
+
 跳过过拟合检查：
 
 ```powershell
@@ -107,7 +131,9 @@ python train.py --skip-overfit
 恢复训练：
 
 ```powershell
-python train.py --resume checkpoints/latest.pt
+uv run python train.py `
+  --resume checkpoints/latest.pt `
+  --run-dir runs/resumed-training
 ```
 
 指定 Checkpoint 输出目录，便于实验隔离：

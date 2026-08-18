@@ -2,7 +2,9 @@
 
 import random
 import math
+import os
 from pathlib import Path
+import tempfile
 from typing import Any
 
 import torch
@@ -134,7 +136,20 @@ def save_checkpoint(
         "random_states": capture_random_states(),
     }
 
-    torch.save(checkpoint, path)
+    temporary_path: Path | None = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            dir=path.parent,
+            prefix=f".{path.name}.",
+            suffix=".tmp",
+            delete=False,
+        ) as handle:
+            temporary_path = Path(handle.name)
+        torch.save(checkpoint, temporary_path)
+        os.replace(temporary_path, path)
+    finally:
+        if temporary_path is not None:
+            temporary_path.unlink(missing_ok=True)
 
 
 def load_checkpoint(

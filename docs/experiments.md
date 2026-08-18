@@ -141,6 +141,15 @@ checkpoint:
 是否需要多 seed 复验:
 ```
 
+训练入口会将其中的机器可采集字段自动写入运行目录：
+
+- `config.yaml`：合并 YAML 与命令行覆盖后的最终配置
+- `environment.json`：Python、PyTorch、CUDA、GPU、Git commit 与 dirty 状态
+- `metrics.jsonl`：逐 step 训练指标、验证结果与 Checkpoint 事件
+- `train.log`：带时间戳的控制台日志
+
+JSONL 每行是独立 JSON 对象，因此训练中断后，已经刷新的指标仍然可以读取。
+
 ### 结构与 Dropout 消融
 
 先把基线值放在 `--values` 第一位，再放变体值：

@@ -60,6 +60,8 @@ def main() -> None:
             str(args.config.resolve()),
             "--checkpoint-dir",
             str(checkpoint_dir),
+            "--run-dir",
+            str(checkpoint_dir),
             "--skip-overfit",
             flag,
             value,

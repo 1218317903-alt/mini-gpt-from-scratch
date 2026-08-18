@@ -109,6 +109,7 @@ def test_checkpoint_round_trip_restores_model(tmp_path) -> None:
         assert torch.equal(expected, actual)
     assert checkpoint["global_step"] == 3
     assert checkpoint["best_validation_loss"] == pytest.approx(1.25)
+    assert not list(tmp_path.glob(".*.tmp"))
 
 
 def test_cli_loads_checkpoint_generates_and_decodes(
