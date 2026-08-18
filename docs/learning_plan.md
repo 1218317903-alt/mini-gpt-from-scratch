@@ -65,6 +65,21 @@
 7. FP16 LoRA 训练、梯度累积、调度与验证
 8. Adapter 保存、全新恢复和固定提示词前后对比
 
+## 阶段七：工程化与可复现实验
+
+1. Python 3.11、uv、pyproject 与锁文件统一环境
+2. GitHub 公有仓库与自动 CI
+3. Ruff 格式化、Lint 与 mypy 静态类型门槛
+4. pytest、分支覆盖率与端到端训练测试
+5. 配置、环境、Git 状态、JSONL 指标与日志追踪
+6. 原子 Checkpoint、实验隔离与恢复训练
+7. Tiny Shakespeare FP32 正式基线
+8. FP32、FP16、BF16 单变量对照
+9. 固定 LR、Warmup、Warmup + Cosine 单变量对照
+10. README、实验报告、复现说明与阶段验收
+
 ## 当前状态
 
-阶段一到五保留从零实现路径；阶段六位于独立的 `hf_lora/`，不会改写 MiniGPT。默认测试覆盖两个模块，真实模型实验使用小型 Qwen Causal LM。
+阶段一到七已完成。阶段一到五保留从零实现路径；阶段六位于独立的 `hf_lora/`，
+不会改写 MiniGPT；阶段七完成工程化、真实基线和单变量实验。下一阶段进入模型服务化，
+之后再学习 RAG 与 Agent。

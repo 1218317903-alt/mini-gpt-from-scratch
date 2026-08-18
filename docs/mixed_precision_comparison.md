@@ -99,7 +99,8 @@ uv run python train.py `
 每个本地 `runs/<name>/` 目录都保留最终生效配置、环境快照、2,000 个 step 指标、
 训练日志和最佳/最新 Checkpoint；`runs/` 被 Git 忽略，仓库只提交轻量结果报告。
 
-## 下一项实验
+## 后续实验
 
-下一项按单变量原则比较固定学习率、Warmup、Warmup + Cosine。三组继续固定模型、
-FP32、seed 和总 Token，回答学习率调度是否改善收敛，而不是同时混入精度差异。
+固定学习率、Warmup、Warmup + Cosine 对照已经完成，见
+[`learning_rate_schedule_comparison.md`](learning_rate_schedule_comparison.md)。阶段七最终
+推荐方案与验收结果见 [`stage7_completion.md`](stage7_completion.md)。

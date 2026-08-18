@@ -183,6 +183,10 @@ python scripts/run_ablation.py --experiment block_size --values 64 128
 
 不能直接把“固定学习率”和“Warmup + Cosine”之间的全部差异归因于某一项。
 
+Tiny Shakespeare 的三组同预算正式实验已经完成，结果见
+[`learning_rate_schedule_comparison.md`](learning_rate_schedule_comparison.md)。在当前
+2,000 步短预算下，固定学习率取得最低验证与测试 Loss，因此保留为默认方案。
+
 ### 混合精度对比
 
 保持模型、数据、Batch、训练步数和调度策略一致，分别比较：
