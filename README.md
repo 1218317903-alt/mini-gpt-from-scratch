@@ -1,5 +1,7 @@
 # mini-gpt-from-scratch
 
+[![CI](https://github.com/1218317903-alt/mini-gpt-from-scratch/actions/workflows/ci.yml/badge.svg)](https://github.com/1218317903-alt/mini-gpt-from-scratch/actions/workflows/ci.yml)
+
 从零实现一个字符级 Decoder-only MiniGPT，并将底层知识迁移到真实开源模型，目前覆盖阶段一到阶段六：
 
 1. 数据流与字符级 Tokenizer
