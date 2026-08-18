@@ -194,6 +194,12 @@ bf16（支持 BF16 的 CUDA 设备）
 ```
 
 验证 Loss 建议统一使用 FP32 评估路径；混合精度推理吞吐应作为另一项测量。
+
+Tiny Shakespeare 的 FP32、FP16、BF16 同预算正式对照已经完成，结果见
+[`mixed_precision_comparison.md`](mixed_precision_comparison.md)。当前 RTX 4060 上的
+单次运行观察是：两种混合精度均节省约 17.29% allocated 峰值显存，但没有提升这个
+81.8 万参数小模型的训练吞吐；该结果不应外推到更大模型或其他硬件。
+
 # KV Cache 基准记录
 
 运行示例：

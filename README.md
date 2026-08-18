@@ -15,8 +15,9 @@
 
 本项目用于教学和实验。阶段五已包含可选 `torch.compile`、KV Cache 与缓存一致性/速度测试；
 首个真实语料 FP32 基线已经完成，详见
-[`docs/tiny_shakespeare_baseline.md`](docs/tiny_shakespeare_baseline.md)。后续消融仍需按
-相同数据与训练预算逐项运行。
+[`docs/tiny_shakespeare_baseline.md`](docs/tiny_shakespeare_baseline.md)；同预算的
+[`FP32 / FP16 / BF16 对照实验`](docs/mixed_precision_comparison.md)也已完成。后续消融
+仍需按相同数据与训练预算逐项运行。
 
 ## 环境
 

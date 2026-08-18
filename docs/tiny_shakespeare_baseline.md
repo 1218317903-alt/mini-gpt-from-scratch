@@ -130,8 +130,8 @@ uv run python evaluate.py `
 `config.yaml`、`environment.json`、`metrics.jsonl`、`train.log`、`best.pt` 和
 `latest.pt`。
 
-## 下一项实验
+## 后续实验
 
-下一项优先做同预算的 FP16 对照，只改变 `--precision fp16`，比较验证 Loss、吞吐和
-显存；随后再做 BF16。每个结果至少先跑 seed 42，发现有价值的差异后再补 3 个 seed，
-避免把随机波动包装成结论。
+同预算的 FP16、BF16 对照已经完成，见
+[`mixed_precision_comparison.md`](mixed_precision_comparison.md)。下一项按单变量原则
+比较固定学习率、Warmup、Warmup + Cosine。
