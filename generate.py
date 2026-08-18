@@ -3,12 +3,17 @@
 from __future__ import annotations
 
 import argparse
-from pathlib import Path
 import time
+from pathlib import Path
 
 import torch
 
-from minigpt.config import load_data_config, load_model_config
+from minigpt.config import (
+    DataConfig,
+    ModelConfig,
+    load_data_config,
+    load_model_config,
+)
 from minigpt.generation import generate
 from minigpt.model import MiniGPT
 from minigpt.tokenizer import CharacterTokenizer
@@ -20,7 +25,6 @@ from minigpt.utils import (
     set_random_seed,
 )
 
-
 PROJECT_ROOT = Path(__file__).resolve().parent
 DEFAULT_CONFIG_PATH = PROJECT_ROOT / "configs" / "tiny_shakespeare.yaml"
 DEFAULT_CHECKPOINT_PATH = PROJECT_ROOT / "checkpoints" / "best.pt"
@@ -30,10 +34,7 @@ def select_device() -> torch.device:
     """Select CUDA, MPS, or CPU in that order."""
     if torch.cuda.is_available():
         return torch.device("cuda")
-    if (
-        hasattr(torch.backends, "mps")
-        and torch.backends.mps.is_available()
-    ):
+    if hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
         return torch.device("mps")
     return torch.device("cpu")
 
@@ -127,9 +128,10 @@ def synchronize(device: torch.device) -> None:
 
 
 def benchmark_generation(
-    model: MiniGPT,
+    model: torch.nn.Module,
     input_ids: torch.Tensor,
     *,
+    block_size: int,
     max_new_tokens: int,
     repeats: int,
     device: torch.device,
@@ -139,7 +141,7 @@ def benchmark_generation(
         raise ValueError("benchmark_repeats must be a positive integer.")
     if max_new_tokens <= 0:
         raise ValueError("KV Cache benchmark requires max_new_tokens > 0.")
-    if input_ids.size(1) + max_new_tokens > model.block_size:
+    if input_ids.size(1) + max_new_tokens > block_size:
         raise ValueError("KV Cache benchmark length exceeds block_size.")
 
     results: dict[bool, list[float]] = {False: [], True: []}
@@ -150,7 +152,7 @@ def benchmark_generation(
             model,
             input_ids,
             max_new_tokens=max_new_tokens,
-            block_size=model.block_size,
+            block_size=block_size,
             do_sample=False,
             use_kv_cache=use_cache,
         )
@@ -163,7 +165,7 @@ def benchmark_generation(
                 model,
                 input_ids,
                 max_new_tokens=max_new_tokens,
-                block_size=model.block_size,
+                block_size=block_size,
                 do_sample=False,
                 use_kv_cache=use_cache,
             )
@@ -202,8 +204,8 @@ def resolve_project_path(path: Path) -> Path:
 
 def build_model(
     tokenizer: CharacterTokenizer,
-    data_config: object,
-    model_config: object,
+    data_config: DataConfig,
+    model_config: ModelConfig,
     checkpoint: dict[str, object] | None = None,
 ) -> MiniGPT:
     """Construct the same model architecture used during training."""
@@ -245,9 +247,7 @@ def validate_checkpoint_tokenizer(
     if not isinstance(saved_info, dict):
         raise ValueError("Checkpoint tokenizer_info must be an object.")
     if saved_info.get("itos") != tokenizer.itos:
-        raise ValueError(
-            "Checkpoint Tokenizer does not match the current Tokenizer."
-        )
+        raise ValueError("Checkpoint Tokenizer does not match the current Tokenizer.")
 
 
 def main() -> None:
@@ -307,6 +307,7 @@ def main() -> None:
         benchmark_generation(
             execution_model,
             input_ids,
+            block_size=model.block_size,
             max_new_tokens=args.max_new_tokens,
             repeats=args.benchmark_repeats,
             device=device,

@@ -43,9 +43,7 @@ class TrackingLogitModel(nn.Module):
 
 
 def test_select_last_logits_and_softmax() -> None:
-    logits = torch.tensor(
-        [[[0.0, 1.0, 2.0], [3.0, 2.0, 1.0]]]
-    )
+    logits = torch.tensor([[[0.0, 1.0, 2.0], [3.0, 2.0, 1.0]]])
 
     last_logits = select_last_logits(logits)
     probabilities = logits_to_probabilities(last_logits)
@@ -117,13 +115,9 @@ def test_sampling_repeats_with_fixed_seed() -> None:
     probabilities = torch.tensor([[0.1, 0.2, 0.7]])
 
     set_random_seed(42)
-    first = torch.stack(
-        [sample_next_token(probabilities) for _ in range(8)]
-    )
+    first = torch.stack([sample_next_token(probabilities) for _ in range(8)])
     set_random_seed(42)
-    second = torch.stack(
-        [sample_next_token(probabilities) for _ in range(8)]
-    )
+    second = torch.stack([sample_next_token(probabilities) for _ in range(8)])
 
     assert torch.equal(first, second)
 
@@ -201,9 +195,7 @@ def test_generate_rejects_empty_prompt_and_supports_zero_new_tokens() -> None:
 
 def test_generated_ids_can_be_decoded() -> None:
     tokenizer = CharacterTokenizer("abc")
-    model = TrackingLogitModel(
-        torch.tensor([0.0, 1.0, 2.0, 3.0])
-    )
+    model = TrackingLogitModel(torch.tensor([0.0, 1.0, 2.0, 3.0]))
     prompt = torch.tensor([tokenizer.encode("ab")])
 
     generated = generate(
@@ -217,4 +209,3 @@ def test_generated_ids_can_be_decoded() -> None:
     # Token ID 3 is <unk>, which is still a valid Tokenizer output.
     text = tokenizer.decode(generated[0].tolist())
     assert text.startswith("ab")
-

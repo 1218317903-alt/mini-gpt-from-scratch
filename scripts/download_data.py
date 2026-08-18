@@ -6,7 +6,6 @@ from urllib.request import Request, urlopen
 from minigpt.config import load_data_config
 from minigpt.utils import write_utf8_text
 
-
 DATA_URL = (
     "https://raw.githubusercontent.com/karpathy/char-rnn/"
     "master/data/tinyshakespeare/input.txt"

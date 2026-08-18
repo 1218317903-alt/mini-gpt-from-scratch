@@ -55,25 +55,17 @@ class TrainingConfig:
 def load_data_config(path: Path) -> DataConfig:
     """从 YAML 文件读取数据配置。"""
     if not path.exists():
-        raise FileNotFoundError(
-            f"找不到配置文件：{path}"
-        )
+        raise FileNotFoundError(f"找不到配置文件：{path}")
 
-    raw_config = yaml.safe_load(
-        path.read_text(encoding="utf-8")
-    )
+    raw_config = yaml.safe_load(path.read_text(encoding="utf-8"))
 
     if not isinstance(raw_config, dict):
-        raise ValueError(
-            "配置文件顶层必须是对象。"
-        )
+        raise ValueError("配置文件顶层必须是对象。")
 
     data_config = raw_config.get("data")
 
     if not isinstance(data_config, dict):
-        raise ValueError(
-            "配置文件必须包含 data 区块。"
-        )
+        raise ValueError("配置文件必须包含 data 区块。")
 
     project_root = path.resolve().parents[1]
 
@@ -81,9 +73,7 @@ def load_data_config(path: Path) -> DataConfig:
         value = data_config.get(name)
 
         if not isinstance(value, str):
-            raise ValueError(
-                f"配置项 {name} 必须是字符串。"
-            )
+            raise ValueError(f"配置项 {name} 必须是字符串。")
 
         return project_root / value
 
@@ -93,58 +83,38 @@ def load_data_config(path: Path) -> DataConfig:
     batch_size = data_config.get("batch_size")
 
     if not isinstance(train_ratio, (int, float)):
-        raise ValueError(
-            "train_ratio 必须是数字。"
-        )
+        raise ValueError("train_ratio 必须是数字。")
 
     if not isinstance(val_ratio, (int, float)):
-        raise ValueError(
-            "val_ratio 必须是数字。"
-        )
+        raise ValueError("val_ratio 必须是数字。")
 
     if not isinstance(block_size, int):
-        raise ValueError(
-            "block_size 必须是整数。"
-        )
+        raise ValueError("block_size 必须是整数。")
 
     if not isinstance(batch_size, int):
-        raise ValueError(
-            "batch_size 必须是整数。"
-        )
+        raise ValueError("batch_size 必须是整数。")
 
     if train_ratio <= 0:
-        raise ValueError(
-            "train_ratio 必须大于 0。"
-        )
+        raise ValueError("train_ratio 必须大于 0。")
 
     if val_ratio <= 0:
-        raise ValueError(
-            "val_ratio 必须大于 0。"
-        )
+        raise ValueError("val_ratio 必须大于 0。")
 
     if train_ratio + val_ratio >= 1:
-        raise ValueError(
-            "train_ratio 和 val_ratio 之和必须小于 1。"
-        )
+        raise ValueError("train_ratio 和 val_ratio 之和必须小于 1。")
 
     if block_size <= 0:
-        raise ValueError(
-            "block_size 必须大于 0。"
-        )
+        raise ValueError("block_size 必须大于 0。")
 
     if batch_size <= 0:
-        raise ValueError(
-            "batch_size 必须大于 0。"
-        )
+        raise ValueError("batch_size 必须大于 0。")
 
     return DataConfig(
         raw_path=resolve_path("raw_path"),
         train_path=resolve_path("train_path"),
         val_path=resolve_path("val_path"),
         test_path=resolve_path("test_path"),
-        tokenizer_path=resolve_path(
-            "tokenizer_path"
-        ),
+        tokenizer_path=resolve_path("tokenizer_path"),
         train_ratio=float(train_ratio),
         val_ratio=float(val_ratio),
         block_size=block_size,
@@ -183,9 +153,7 @@ def load_model_config(path: Path) -> ModelConfig:
         raise ValueError("tie_weights 必须是布尔值。")
 
     if values["embedding_dim"] % values["num_heads"] != 0:
-        raise ValueError(
-            "embedding_dim 必须能被 num_heads 整除。"
-        )
+        raise ValueError("embedding_dim 必须能被 num_heads 整除。")
 
     return ModelConfig(
         embedding_dim=values["embedding_dim"],

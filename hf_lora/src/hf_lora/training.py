@@ -37,7 +37,9 @@ def build_scheduler(
     return torch.optim.lr_scheduler.LambdaLR(optimizer, multiplier)
 
 
-def infinite_batches(data_loader: Iterable[dict[str, torch.Tensor]]) -> Iterator[dict[str, torch.Tensor]]:
+def infinite_batches(
+    data_loader: Iterable[dict[str, torch.Tensor]],
+) -> Iterator[dict[str, torch.Tensor]]:
     while True:
         yielded = False
         for batch in data_loader:
@@ -47,13 +49,15 @@ def infinite_batches(data_loader: Iterable[dict[str, torch.Tensor]]) -> Iterator
             raise ValueError("训练 DataLoader 为空。")
 
 
-def _move_batch(batch: dict[str, torch.Tensor], device: torch.device) -> dict[str, torch.Tensor]:
+def _move_batch(
+    batch: dict[str, torch.Tensor], device: torch.device
+) -> dict[str, torch.Tensor]:
     return {key: value.to(device, non_blocking=True) for key, value in batch.items()}
 
 
 @torch.no_grad()
 def evaluate_token_weighted_loss(
-    model: torch.nn.Module,
+    model: Any,
     data_loader: Iterable[dict[str, torch.Tensor]],
     *,
     device: torch.device,
@@ -82,7 +86,7 @@ def evaluate_token_weighted_loss(
 
 
 def train_lora(
-    model: torch.nn.Module,
+    model: Any,
     train_loader: Iterable[dict[str, torch.Tensor]],
     validation_loader: Iterable[dict[str, torch.Tensor]],
     *,
@@ -141,9 +145,7 @@ def train_lora(
             weighted_loss += raw_loss.detach().float().item() * supervised
 
         scaler.unscale_(optimizer)
-        gradient_norm = torch.nn.utils.clip_grad_norm_(
-            parameters, config.max_grad_norm
-        )
+        gradient_norm = torch.nn.utils.clip_grad_norm_(parameters, config.max_grad_norm)
         scaler.step(optimizer)
         scaler.update()
         optimizer_updated = float(scaler.get_scale()) >= scale_before

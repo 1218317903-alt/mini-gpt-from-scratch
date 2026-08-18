@@ -94,9 +94,7 @@ def load_experiment_config(path: Path) -> ExperimentConfig:
         training=TrainingConfig(
             seed=int(training["seed"]),
             micro_batch_size=int(training["micro_batch_size"]),
-            gradient_accumulation_steps=int(
-                training["gradient_accumulation_steps"]
-            ),
+            gradient_accumulation_steps=int(training["gradient_accumulation_steps"]),
             max_optimizer_steps=int(training["max_optimizer_steps"]),
             learning_rate=float(training["learning_rate"]),
             weight_decay=float(training["weight_decay"]),

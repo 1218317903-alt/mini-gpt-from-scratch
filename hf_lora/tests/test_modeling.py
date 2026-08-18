@@ -1,9 +1,7 @@
 from __future__ import annotations
 
-import torch
-from torch import nn
-
 from hf_lora.modeling import estimate_lora_parameters, summarize_parameters
+from torch import nn
 
 
 class TinyTargets(nn.Module):
@@ -15,7 +13,9 @@ class TinyTargets(nn.Module):
 
 
 def test_lora_parameter_estimate_uses_real_linear_shapes() -> None:
-    matched, parameters = estimate_lora_parameters(TinyTargets(), ("q_proj", "v_proj"), rank=2)
+    matched, parameters = estimate_lora_parameters(
+        TinyTargets(), ("q_proj", "v_proj"), rank=2
+    )
     assert matched == 2
     assert parameters == 2 * (6 + 4) + 2 * (6 + 2)
 

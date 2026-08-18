@@ -38,10 +38,19 @@ jobs:
           cache-dependency-glob: uv.lock
 
       - name: Install locked dependencies
-        run: uv sync --locked --extra dev --extra hf
+        run: uv sync --locked --extra dev --extra hf --extra viz
 
       - name: Verify environment
         run: uv run python -c "import sys, torch; print(sys.version); print(torch.__version__)"
+
+      - name: Check formatting
+        run: uv run ruff format --check .
+
+      - name: Lint
+        run: uv run ruff check .
+
+      - name: Type check
+        run: uv run mypy
 
       - name: Run test suite
         run: uv run pytest -q --cov=minigpt --cov=hf_lora --cov-report=term-missing

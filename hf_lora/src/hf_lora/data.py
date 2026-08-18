@@ -10,7 +10,6 @@ from typing import Any
 import torch
 from torch.utils.data import Dataset
 
-
 IGNORE_INDEX = -100
 VALID_ROLE_ORDERS = (
     ("user", "assistant"),
@@ -66,7 +65,9 @@ def validate_messages(messages: Any) -> list[dict[str, str]]:
     return normalized
 
 
-def _chat_ids(tokenizer: Any, messages: list[dict[str, str]], *, generation: bool) -> list[int]:
+def _chat_ids(
+    tokenizer: Any, messages: list[dict[str, str]], *, generation: bool
+) -> list[int]:
     encoded = tokenizer.apply_chat_template(
         messages,
         tokenize=True,
@@ -95,9 +96,7 @@ def encode_sft_example(
     if full_ids[: len(prompt_ids)] != prompt_ids:
         raise ValueError("Prompt Token 不是完整训练序列的前缀。")
     if len(full_ids) > max_length:
-        raise ValueError(
-            f"样本超过 max_length：{len(full_ids)} > {max_length}。"
-        )
+        raise ValueError(f"样本超过 max_length：{len(full_ids)} > {max_length}。")
     labels = [IGNORE_INDEX] * len(prompt_ids) + full_ids[len(prompt_ids) :]
     return {
         "input_ids": full_ids,
@@ -107,7 +106,9 @@ def encode_sft_example(
 
 
 class SFTDataset(Dataset[dict[str, list[int]]]):
-    def __init__(self, records: list[dict[str, Any]], tokenizer: Any, max_length: int) -> None:
+    def __init__(
+        self, records: list[dict[str, Any]], tokenizer: Any, max_length: int
+    ) -> None:
         self.examples = [
             encode_sft_example(record, tokenizer, max_length) for record in records
         ]
@@ -155,7 +156,7 @@ class SFTDataCollator:
             rows["attention_mask"].append(
                 list(feature["attention_mask"]) + [0] * padding
             )
-            rows["labels"].append(
-                list(feature["labels"]) + [IGNORE_INDEX] * padding
-            )
-        return {key: torch.tensor(value, dtype=torch.long) for key, value in rows.items()}
+            rows["labels"].append(list(feature["labels"]) + [IGNORE_INDEX] * padding)
+        return {
+            key: torch.tensor(value, dtype=torch.long) for key, value in rows.items()
+        }

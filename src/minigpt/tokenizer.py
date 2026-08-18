@@ -22,8 +22,7 @@ class CharacterTokenizer:
             *sorted(set(training_text)),
         ]
         self.stoi: dict[str, int] = {
-            token: index
-            for index, token in enumerate(self.itos)
+            token: index for index, token in enumerate(self.itos)
         }
         self.unk_id = self.stoi[self.UNK_TOKEN]
 
@@ -47,9 +46,7 @@ class CharacterTokenizer:
             token_id = self.stoi.get(character)
             if token_id is None:
                 if not allow_unknown:
-                    raise ValueError(
-                        f"未知字符 {character!r}，位置为 {position}。"
-                    )
+                    raise ValueError(f"未知字符 {character!r}，位置为 {position}。")
                 token_id = self.unk_id
             token_ids.append(token_id)
 
@@ -106,9 +103,6 @@ class CharacterTokenizer:
 
         tokenizer = cls.__new__(cls)
         tokenizer.itos = raw_itos
-        tokenizer.stoi = {
-            token: index
-            for index, token in enumerate(raw_itos)
-        }
+        tokenizer.stoi = {token: index for index, token in enumerate(raw_itos)}
         tokenizer.unk_id = tokenizer.stoi[cls.UNK_TOKEN]
         return tokenizer

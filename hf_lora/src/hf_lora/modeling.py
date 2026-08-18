@@ -10,7 +10,6 @@ import torch
 from peft import LoraConfig, TaskType, get_peft_model
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-
 DTYPES = {
     "float16": torch.float16,
     "bfloat16": torch.bfloat16,
@@ -29,9 +28,7 @@ class ParameterSummary:
 def summarize_parameters(model: torch.nn.Module) -> ParameterSummary:
     total = sum(parameter.numel() for parameter in model.parameters())
     trainable = sum(
-        parameter.numel()
-        for parameter in model.parameters()
-        if parameter.requires_grad
+        parameter.numel() for parameter in model.parameters() if parameter.requires_grad
     )
     return ParameterSummary(
         total=total,
@@ -55,8 +52,8 @@ def load_tokenizer(source: str | Path) -> Any:
 
 def load_base_model(
     source: str | Path, *, dtype_name: str, device: torch.device
-) -> torch.nn.Module:
-    model = AutoModelForCausalLM.from_pretrained(
+) -> Any:
+    model: Any = AutoModelForCausalLM.from_pretrained(
         str(source),
         dtype=DTYPES[dtype_name],
         low_cpu_mem_usage=True,
@@ -83,13 +80,13 @@ def estimate_lora_parameters(
 
 
 def inject_lora(
-    model: torch.nn.Module,
+    model: Any,
     *,
     rank: int,
     alpha: int,
     dropout: float,
     target_modules: tuple[str, ...],
-) -> torch.nn.Module:
+) -> Any:
     config = LoraConfig(
         task_type=TaskType.CAUSAL_LM,
         inference_mode=False,
@@ -100,6 +97,6 @@ def inject_lora(
         bias="none",
         init_lora_weights=True,
     )
-    peft_model = get_peft_model(model, config)
+    peft_model: Any = get_peft_model(model, config)
     peft_model.config.use_cache = False
     return peft_model

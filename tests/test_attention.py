@@ -12,7 +12,6 @@ from minigpt.attention import (
     split_heads,
 )
 
-
 B, T, C, H, D = 2, 4, 8, 2, 4
 
 

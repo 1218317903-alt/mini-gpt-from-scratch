@@ -12,7 +12,6 @@ from minigpt.model import (
     count_parameters,
 )
 
-
 B, T, C, H, V = 2, 4, 8, 2, 20
 
 
@@ -80,16 +79,11 @@ def test_minigpt_backward() -> None:
     loss.backward()
 
     trainable_parameters = [
-        parameter
-        for parameter in model.parameters()
-        if parameter.requires_grad
+        parameter for parameter in model.parameters() if parameter.requires_grad
     ]
 
     assert trainable_parameters
-    assert all(
-        parameter.grad is not None
-        for parameter in trainable_parameters
-    )
+    assert all(parameter.grad is not None for parameter in trainable_parameters)
 
 
 def test_minigpt_rejects_long_input() -> None:
@@ -124,7 +118,5 @@ def test_weight_tying_is_optional() -> None:
     assert untied_model.lm_head.weight is not (
         untied_model.token_embedding.embedding.weight
     )
-    assert tied_model.lm_head.weight is (
-        tied_model.token_embedding.embedding.weight
-    )
+    assert tied_model.lm_head.weight is (tied_model.token_embedding.embedding.weight)
     assert count_parameters(tied_model) < count_parameters(untied_model)

@@ -23,30 +23,22 @@ from minigpt.utils import (
     read_utf8_text,
 )
 
-
 PROJECT_ROOT = Path(__file__).resolve().parent
-DEFAULT_CONFIG_PATH = (
-    PROJECT_ROOT / "configs" / "tiny_shakespeare.yaml"
-)
+DEFAULT_CONFIG_PATH = PROJECT_ROOT / "configs" / "tiny_shakespeare.yaml"
 
 
 def select_device() -> torch.device:
     if torch.cuda.is_available():
         return torch.device("cuda")
 
-    if (
-        hasattr(torch.backends, "mps")
-        and torch.backends.mps.is_available()
-    ):
+    if hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
         return torch.device("mps")
 
     return torch.device("cpu")
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(
-        description="评估 MiniGPT Checkpoint。"
-    )
+    parser = argparse.ArgumentParser(description="评估 MiniGPT Checkpoint。")
     parser.add_argument(
         "--config",
         type=Path,
@@ -86,9 +78,7 @@ def main() -> None:
     model_config = load_model_config(config_path)
     training_config = load_training_config(config_path)
 
-    tokenizer = CharacterTokenizer.load(
-        data_config.tokenizer_path
-    )
+    tokenizer = CharacterTokenizer.load(data_config.tokenizer_path)
     device = select_device()
     checkpoint_payload = load_checkpoint_payload(
         checkpoint_path,
@@ -172,17 +162,12 @@ def main() -> None:
         device=device,
     )
 
-    saved_tokenizer_info = checkpoint.get(
-        "tokenizer_info"
-    )
+    saved_tokenizer_info = checkpoint.get("tokenizer_info")
     if (
         saved_tokenizer_info is not None
-        and saved_tokenizer_info.get("itos")
-        != tokenizer.itos
+        and saved_tokenizer_info.get("itos") != tokenizer.itos
     ):
-        raise ValueError(
-            "Checkpoint 的 Tokenizer 与当前 Tokenizer 不一致。"
-        )
+        raise ValueError("Checkpoint 的 Tokenizer 与当前 Tokenizer 不一致。")
 
     execution_model = compile_model(
         model,
@@ -200,9 +185,7 @@ def main() -> None:
     print(f"device: {device}")
     print(f"split: {args.split}")
     print(f"checkpoint: {checkpoint_path}")
-    print(
-        f"global_step: {checkpoint['global_step']}"
-    )
+    print(f"global_step: {checkpoint['global_step']}")
     print(f"loss: {validation_loss:.4f}")
 
 

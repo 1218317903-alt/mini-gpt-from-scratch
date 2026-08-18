@@ -105,6 +105,7 @@ def test_checkpoint_round_trip_restores_model(tmp_path) -> None:
     for expected, actual in zip(
         model.state_dict().values(),
         restored_model.state_dict().values(),
+        strict=True,
     ):
         assert torch.equal(expected, actual)
     assert checkpoint["global_step"] == 3

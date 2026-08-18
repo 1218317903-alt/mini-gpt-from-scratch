@@ -6,7 +6,6 @@ from minigpt.config import load_data_config
 from minigpt.tokenizer import CharacterTokenizer
 from minigpt.utils import read_utf8_text, write_utf8_text
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 CONFIG_PATH = PROJECT_ROOT / "configs" / "tiny_shakespeare.yaml"
 

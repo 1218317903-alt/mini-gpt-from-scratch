@@ -8,7 +8,6 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 
-
 KVCache = tuple[torch.Tensor, torch.Tensor]
 
 
@@ -24,9 +23,7 @@ def split_heads(
 
     batch_size, sequence_length, embedding_dim = hidden_states.shape
     if embedding_dim % num_heads != 0:
-        raise ValueError(
-            "embedding_dim 必须能被 num_heads 整除。"
-        )
+        raise ValueError("embedding_dim 必须能被 num_heads 整除。")
 
     head_dim = embedding_dim // num_heads
     hidden_states = hidden_states.contiguous().view(
@@ -44,9 +41,7 @@ def merge_heads(hidden_states: torch.Tensor) -> torch.Tensor:
     if hidden_states.ndim != 4:
         raise ValueError("hidden_states 必须是 [B,H,T,D]。")
 
-    batch_size, num_heads, sequence_length, head_dim = (
-        hidden_states.shape
-    )
+    batch_size, num_heads, sequence_length, head_dim = hidden_states.shape
 
     hidden_states = hidden_states.transpose(1, 2)
     hidden_states = hidden_states.contiguous()
@@ -80,9 +75,7 @@ class QKVProjection(nn.Module):
         if hidden_states.ndim != 3:
             raise ValueError("hidden_states 必须是 [B,T,C]。")
         if hidden_states.size(-1) != self.embedding_dim:
-            raise ValueError(
-                "输入最后一维必须等于 embedding_dim。"
-            )
+            raise ValueError("输入最后一维必须等于 embedding_dim。")
 
         query = self.q_proj(hidden_states)
         key = self.k_proj(hidden_states)
@@ -120,9 +113,7 @@ def apply_causal_mask(scores: torch.Tensor) -> torch.Tensor:
         raise ValueError("Key 长度必须大于等于正的 Query 长度。")
 
     past_length = key_length - query_length
-    query_positions = (
-        torch.arange(query_length, device=scores.device) + past_length
-    )
+    query_positions = torch.arange(query_length, device=scores.device) + past_length
     key_positions = torch.arange(key_length, device=scores.device)
     mask = key_positions.unsqueeze(0) <= query_positions.unsqueeze(1)
 
@@ -174,9 +165,7 @@ class MultiHeadCausalSelfAttention(nn.Module):
         if type(block_size) is not int or block_size <= 0:
             raise ValueError("block_size 必须是正整数。")
         if embedding_dim % num_heads != 0:
-            raise ValueError(
-                "embedding_dim 必须能被 num_heads 整除。"
-            )
+            raise ValueError("embedding_dim 必须能被 num_heads 整除。")
         if not isinstance(dropout, (int, float)) or isinstance(dropout, bool):
             raise TypeError("dropout 必须是数字。")
         if not 0.0 <= float(dropout) < 1.0:
@@ -209,14 +198,10 @@ class MultiHeadCausalSelfAttention(nn.Module):
         if hidden_states.ndim != 3:
             raise ValueError("hidden_states 必须是 [B,T,C]。")
         if hidden_states.size(-1) != self.embedding_dim:
-            raise ValueError(
-                "输入最后一维必须等于 embedding_dim。"
-            )
+            raise ValueError("输入最后一维必须等于 embedding_dim。")
         current_length = hidden_states.size(1)
         if current_length > self.block_size:
-            raise ValueError(
-                "输入序列长度超过 block_size。"
-            )
+            raise ValueError("输入序列长度超过 block_size。")
 
         query, key, value = self.qkv_projection(hidden_states)
         query = split_heads(query, self.num_heads)
@@ -253,9 +238,7 @@ class MultiHeadCausalSelfAttention(nn.Module):
         )
 
         attention_output = merge_heads(attention_output)
-        attention_output = self.output_dropout(
-            self.out_proj(attention_output)
-        )
+        attention_output = self.output_dropout(self.out_proj(attention_output))
         present_key_value = (key, value)
         if use_cache and output_attentions:
             return attention_output, present_key_value, attention_weights

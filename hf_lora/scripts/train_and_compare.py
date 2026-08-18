@@ -17,7 +17,6 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(SOURCE_ROOT))
 
 from hf_lora.config import load_experiment_config  # noqa: E402
-from hf_lora.data import SFTDataCollator, SFTDataset, load_jsonl  # noqa: E402
 from hf_lora.generation import generate_response  # noqa: E402
 from hf_lora.modeling import (  # noqa: E402
     DTYPES,
@@ -32,6 +31,8 @@ from hf_lora.training import (  # noqa: E402
     set_seed,
     train_lora,
 )
+
+from hf_lora.data import SFTDataCollator, SFTDataset, load_jsonl  # noqa: E402
 
 
 def resolve_project_path(path: Path) -> Path:
@@ -107,9 +108,7 @@ def main() -> None:
         collate_fn=collator,
     )
     amp_dtype = DTYPES[config.model.dtype]
-    base_model = load_base_model(
-        source, dtype_name=config.model.dtype, device=device
-    )
+    base_model = load_base_model(source, dtype_name=config.model.dtype, device=device)
     baseline_loss = evaluate_token_weighted_loss(
         base_model,
         validation_loader,
@@ -182,9 +181,7 @@ def main() -> None:
     gc.collect()
     torch.cuda.empty_cache()
 
-    fresh_base = load_base_model(
-        source, dtype_name=config.model.dtype, device=device
-    )
+    fresh_base = load_base_model(source, dtype_name=config.model.dtype, device=device)
     restored = PeftModel.from_pretrained(
         fresh_base, adapter_directory, is_trainable=False
     )
@@ -194,9 +191,7 @@ def main() -> None:
     maximum_logit_difference = float(
         (logits_before_save - logits_after_load).abs().max().item()
     )
-    if not torch.allclose(
-        logits_before_save, logits_after_load, atol=1e-5, rtol=1e-4
-    ):
+    if not torch.allclose(logits_before_save, logits_after_load, atol=1e-5, rtol=1e-4):
         raise RuntimeError(
             f"Adapter 恢复 logits 不一致，最大误差 {maximum_logit_difference}。"
         )
@@ -228,7 +223,9 @@ def main() -> None:
                 "after": second["response"],
                 "restored": third["response"],
             }
-            for first, second, third in zip(before, after, restored_results, strict=True)
+            for first, second, third in zip(
+                before, after, restored_results, strict=True
+            )
         ],
     }
     (artifact_directory / "training_metrics.json").write_text(

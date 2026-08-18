@@ -2,27 +2,26 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
 import json
 import logging
 import os
-from pathlib import Path
 import platform
 import subprocess
 import sys
 import tempfile
+from datetime import UTC, datetime
+from pathlib import Path
 from typing import Any
 
 import torch
 import yaml
-
 
 LOGGER_NAME = "minigpt.train"
 
 
 def utc_now() -> datetime:
     """返回带时区的 UTC 时间，便于测试替换。"""
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 def _run_git(project_root: Path, *args: str) -> str | None:
@@ -48,7 +47,7 @@ def _run_git(project_root: Path, *args: str) -> str | None:
 
 def create_run_id(project_root: Path, now: datetime | None = None) -> str:
     """生成可排序且低冲突的运行 ID。"""
-    timestamp = (now or utc_now()).astimezone(timezone.utc)
+    timestamp = (now or utc_now()).astimezone(UTC)
     short_sha = _run_git(project_root, "rev-parse", "--short", "HEAD")
     suffix = short_sha or "nogit"
     return f"{timestamp:%Y%m%d-%H%M%S-%f}-{suffix}"
@@ -88,9 +87,7 @@ def collect_environment(
             "cuda_available": torch.cuda.is_available(),
             "cuda_runtime": torch.version.cuda,
             "cudnn_version": (
-                torch.backends.cudnn.version()
-                if torch.cuda.is_available()
-                else None
+                torch.backends.cudnn.version() if torch.cuda.is_available() else None
             ),
         },
         "cuda_devices": devices,
@@ -145,12 +142,10 @@ class ExperimentRun:
         environment: dict[str, Any],
         *,
         allow_existing: bool = False,
-    ) -> "ExperimentRun":
+    ) -> ExperimentRun:
         config_path = run_dir / "config.yaml"
         environment_path = run_dir / "environment.json"
-        if not allow_existing and (
-            config_path.exists() or environment_path.exists()
-        ):
+        if not allow_existing and (config_path.exists() or environment_path.exists()):
             raise FileExistsError(f"运行目录已包含实验记录：{run_dir}")
 
         run_dir.mkdir(parents=True, exist_ok=True)

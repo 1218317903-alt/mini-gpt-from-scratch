@@ -6,9 +6,7 @@ import torch
 from torch.utils.data import Dataset
 
 
-class CharacterLanguageModelDataset(
-    Dataset[tuple[torch.Tensor, torch.Tensor]]
-):
+class CharacterLanguageModelDataset(Dataset[tuple[torch.Tensor, torch.Tensor]]):
     """将连续 Token ID 转换为 x 和 y。"""
 
     def __init__(
@@ -21,14 +19,10 @@ class CharacterLanguageModelDataset(
             raise ValueError("token_ids 不能为空。")
 
         if block_size <= 0:
-            raise ValueError(
-                "block_size 必须大于 0。"
-            )
+            raise ValueError("block_size 必须大于 0。")
 
         if len(token_ids) <= block_size:
-            raise ValueError(
-                "token 数量必须大于 block_size。"
-            )
+            raise ValueError("token 数量必须大于 block_size。")
 
         self.token_ids = torch.tensor(
             token_ids,
@@ -50,13 +44,9 @@ class CharacterLanguageModelDataset(
             raise TypeError("index 必须是 int。")
 
         if not 0 <= index < len(self):
-            raise IndexError(
-                f"index 超出范围：{index}。"
-            )
+            raise IndexError(f"index 超出范围：{index}。")
 
-        window = self.token_ids[
-            index : index + self.block_size + 1
-        ]
+        window = self.token_ids[index : index + self.block_size + 1]
 
         x = window[:-1]
         y = window[1:]
@@ -65,6 +55,4 @@ class CharacterLanguageModelDataset(
 
 
 # 保留旧名称，避免已有脚本立刻失效。
-CausalLanguageModelingDataset = (
-    CharacterLanguageModelDataset
-)
+CausalLanguageModelingDataset = CharacterLanguageModelDataset

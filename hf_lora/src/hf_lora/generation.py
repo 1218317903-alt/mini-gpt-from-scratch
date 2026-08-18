@@ -9,7 +9,7 @@ import torch
 
 @torch.no_grad()
 def generate_response(
-    model: torch.nn.Module,
+    model: Any,
     tokenizer: Any,
     messages: list[dict[str, str]],
     *,

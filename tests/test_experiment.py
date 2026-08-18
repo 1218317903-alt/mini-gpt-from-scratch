@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
 import json
 import logging
 import sys
+from datetime import UTC, datetime
 
 import pytest
 import torch
@@ -21,7 +21,7 @@ from minigpt.tokenizer import CharacterTokenizer
 
 
 def test_create_run_id_is_sortable_and_has_fallback(tmp_path) -> None:
-    now = datetime(2026, 8, 18, 1, 2, 3, 456789, tzinfo=timezone.utc)
+    now = datetime(2026, 8, 18, 1, 2, 3, 456789, tzinfo=UTC)
     run_id = create_run_id(tmp_path, now=now)
     assert run_id == "20260818-010203-456789-nogit"
 
@@ -36,12 +36,8 @@ def test_experiment_run_writes_snapshots_metrics_and_log(tmp_path) -> None:
     run.record("train_step", step=1, train_loss=1.25)
 
     config = yaml.safe_load((run_dir / "config.yaml").read_text(encoding="utf-8"))
-    environment = json.loads(
-        (run_dir / "environment.json").read_text(encoding="utf-8")
-    )
-    metric = json.loads(
-        (run_dir / "metrics.jsonl").read_text(encoding="utf-8").strip()
-    )
+    environment = json.loads((run_dir / "environment.json").read_text(encoding="utf-8"))
+    metric = json.loads((run_dir / "metrics.jsonl").read_text(encoding="utf-8").strip())
     assert config["model"]["layers"] == 2
     assert config["说明"] == "测试"
     assert environment["device"] == "cpu"
@@ -72,9 +68,9 @@ def test_existing_run_requires_resume_mode(tmp_path) -> None:
         allow_existing=True,
     )
     assert resumed.run_dir == run_dir
-    assert yaml.safe_load(
-        (run_dir / "config.yaml").read_text(encoding="utf-8")
-    ) == {"version": 1}
+    assert yaml.safe_load((run_dir / "config.yaml").read_text(encoding="utf-8")) == {
+        "version": 1
+    }
     resume_files = list(run_dir.glob("environment-resume-*.json"))
     assert len(resume_files) == 1
 
@@ -174,9 +170,7 @@ def test_training_cli_writes_complete_run_artifacts(
     assert (checkpoint_dir / "latest.pt").is_file()
     events = [
         json.loads(line)["event"]
-        for line in (run_dir / "metrics.jsonl").read_text(
-            encoding="utf-8"
-        ).splitlines()
+        for line in (run_dir / "metrics.jsonl").read_text(encoding="utf-8").splitlines()
     ]
     assert events == [
         "run_started",

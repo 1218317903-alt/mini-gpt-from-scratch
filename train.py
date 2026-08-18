@@ -1,11 +1,11 @@
 """阶段三训练入口。"""
 
 import argparse
-from dataclasses import asdict, replace
 import logging
-from pathlib import Path
 import sys
 import time
+from dataclasses import asdict, replace
+from pathlib import Path
 
 import torch
 from torch.utils.data import DataLoader
@@ -43,18 +43,13 @@ from minigpt.utils import (
     set_random_seed,
 )
 
-
 PROJECT_ROOT = Path(__file__).resolve().parent
-DEFAULT_CONFIG_PATH = (
-    PROJECT_ROOT / "configs" / "tiny_shakespeare.yaml"
-)
+DEFAULT_CONFIG_PATH = PROJECT_ROOT / "configs" / "tiny_shakespeare.yaml"
 LOGGER = logging.getLogger(LOGGER_NAME)
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(
-        description="训练 MiniGPT。"
-    )
+    parser = argparse.ArgumentParser(description="训练 MiniGPT。")
     parser.add_argument(
         "--config",
         type=Path,
@@ -133,10 +128,7 @@ def select_device() -> torch.device:
     if torch.cuda.is_available():
         return torch.device("cuda")
 
-    if (
-        hasattr(torch.backends, "mps")
-        and torch.backends.mps.is_available()
-    ):
+    if hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
         return torch.device("mps")
 
     return torch.device("cpu")
@@ -217,13 +209,13 @@ def resolve_amp(
     return torch.bfloat16, None
 
 
-def normalize_config(config: object) -> dict[str, object]:
+def normalize_config(
+    config: DataConfig | ModelConfig | TrainingConfig,
+) -> dict[str, object]:
     """把 dataclass 配置转换为可保存的字典。"""
     values = asdict(config)
     return {
-        name: str(value)
-        if isinstance(value, Path)
-        else value
+        name: str(value) if isinstance(value, Path) else value
         for name, value in values.items()
     }
 
@@ -263,9 +255,7 @@ def run_tiny_batch_overfit_test(
         weight_decay=training_config.weight_decay,
     )
 
-    fixed_inputs, fixed_targets = next(
-        iter(train_loader)
-    )
+    fixed_inputs, fixed_targets = next(iter(train_loader))
 
     fixed_inputs = fixed_inputs[:1].to(device)
     fixed_targets = fixed_targets[:1].to(device)
@@ -303,19 +293,10 @@ def run_tiny_batch_overfit_test(
                 f"gradient_norm={gradient_norm:.4f}"
             )
 
-    if (
-        initial_loss is None
-        or final_loss is None
-        or final_loss >= initial_loss
-    ):
-        raise RuntimeError(
-            "极小 Batch 过拟合失败：Loss 没有下降。"
-        )
+    if initial_loss is None or final_loss is None or final_loss >= initial_loss:
+        raise RuntimeError("极小 Batch 过拟合失败：Loss 没有下降。")
 
-    LOGGER.info(
-        "极小 Batch 过拟合通过："
-        f"{initial_loss:.4f} -> {final_loss:.4f}"
-    )
+    LOGGER.info(f"极小 Batch 过拟合通过：{initial_loss:.4f} -> {final_loss:.4f}")
 
 
 def main() -> None:
@@ -346,9 +327,7 @@ def main() -> None:
         "training": normalize_config(training_config),
         "runtime": {
             "dropout": args.dropout,
-            "gradient_accumulation_steps": (
-                args.gradient_accumulation_steps
-            ),
+            "gradient_accumulation_steps": (args.gradient_accumulation_steps),
             "warmup_steps": args.warmup_steps,
             "warmup_start_factor": args.warmup_start_factor,
             "cosine_decay": args.cosine_decay,
@@ -361,17 +340,13 @@ def main() -> None:
             "source_config": str(config_path),
             "run_dir": str(run_dir),
             "checkpoint_dir": str(checkpoint_dir),
-            "resume_checkpoint": (
-                None if args.resume is None else str(args.resume)
-            ),
+            "resume_checkpoint": (None if args.resume is None else str(args.resume)),
         },
     }
 
     set_random_seed(training_config.seed)
 
-    tokenizer = CharacterTokenizer.load(
-        data_config.tokenizer_path
-    )
+    tokenizer = CharacterTokenizer.load(data_config.tokenizer_path)
 
     train_text = read_utf8_text(data_config.train_path)
     val_text = read_utf8_text(data_config.val_path)
@@ -416,10 +391,7 @@ def main() -> None:
     LOGGER.info("run_dir=%s", run_dir)
     LOGGER.info("checkpoint_dir=%s", checkpoint_dir)
 
-    if (
-        args.resume is None
-        and not args.skip_overfit
-    ):
+    if args.resume is None and not args.skip_overfit:
         run_tiny_batch_overfit_test(
             tokenizer=tokenizer,
             data_config=data_config,
@@ -446,9 +418,7 @@ def main() -> None:
     )
 
     if not args.cosine_decay and args.min_learning_rate != 0.0:
-        raise ValueError(
-            "未启用 Cosine Decay 时 min_learning_rate 必须为 0。"
-        )
+        raise ValueError("未启用 Cosine Decay 时 min_learning_rate 必须为 0。")
 
     scheduler: WarmupCosineScheduler | None = None
     if args.warmup_steps > 0 or args.cosine_decay:
@@ -482,33 +452,19 @@ def main() -> None:
             scaler=scaler,
         )
 
-        saved_tokenizer_info = checkpoint.get(
-            "tokenizer_info"
-        )
+        saved_tokenizer_info = checkpoint.get("tokenizer_info")
         if (
             saved_tokenizer_info is not None
-            and saved_tokenizer_info.get("itos")
-            != tokenizer.itos
+            and saved_tokenizer_info.get("itos") != tokenizer.itos
         ):
-            raise ValueError(
-                "Checkpoint 的 Tokenizer 与当前 Tokenizer 不一致。"
-            )
+            raise ValueError("Checkpoint 的 Tokenizer 与当前 Tokenizer 不一致。")
 
-        global_step = int(
-            checkpoint["global_step"]
-        )
-        if (
-            scheduler is not None
-            and checkpoint.get("scheduler_state_dict") is None
-        ):
+        global_step = int(checkpoint["global_step"])
+        if scheduler is not None and checkpoint.get("scheduler_state_dict") is None:
             scheduler.set_completed_steps(global_step)
-        best_validation_loss = float(
-            checkpoint["best_validation_loss"]
-        )
+        best_validation_loss = float(checkpoint["best_validation_loss"])
 
-        LOGGER.info(
-            f"已恢复训练：global_step={global_step}"
-        )
+        LOGGER.info(f"已恢复训练：global_step={global_step}")
     tokenizer_info = build_tokenizer_info(tokenizer)
 
     batch_iterator = iter(train_loader)
@@ -554,30 +510,24 @@ def main() -> None:
             except StopIteration:
                 batch_iterator = iter(train_loader)
                 x_batch, y_batch = next(batch_iterator)
-            micro_batches.append(
-                (x_batch.to(device), y_batch.to(device))
-            )
+            micro_batches.append((x_batch.to(device), y_batch.to(device)))
 
         learning_rate_used = optimizer.param_groups[0]["lr"]
         if device.type == "cuda":
             torch.cuda.synchronize(device)
         step_start = time.perf_counter()
-        train_loss, gradient_norm, optimizer_updated = (
-            train_accumulation_step(
-                model=execution_model,
-                optimizer=optimizer,
-                micro_batches=micro_batches,
-                grad_clip_norm=training_config.grad_clip_norm,
-                amp_dtype=amp_dtype,
-                scaler=scaler,
-            )
+        train_loss, gradient_norm, optimizer_updated = train_accumulation_step(
+            model=execution_model,
+            optimizer=optimizer,
+            micro_batches=micro_batches,
+            grad_clip_norm=training_config.grad_clip_norm,
+            amp_dtype=amp_dtype,
+            scaler=scaler,
         )
         if device.type == "cuda":
             torch.cuda.synchronize(device)
         training_elapsed += time.perf_counter() - step_start
-        processed_tokens += sum(
-            inputs.numel() for inputs, _ in micro_batches
-        )
+        processed_tokens += sum(inputs.numel() for inputs, _ in micro_batches)
 
         if not optimizer_updated:
             LOGGER.warning("FP16 梯度出现 Inf/NaN，本次参数更新已跳过。")
@@ -610,14 +560,9 @@ def main() -> None:
             training_time_seconds=float(training_elapsed),
         )
 
-        if (
-            global_step % training_config.log_interval == 0
-            or global_step == 1
-        ):
+        if global_step % training_config.log_interval == 0 or global_step == 1:
             memory_text = (
-                "not_available"
-                if peak_memory_mib is None
-                else f"{peak_memory_mib:.2f}"
+                "not_available" if peak_memory_mib is None else f"{peak_memory_mib:.2f}"
             )
             LOGGER.info(
                 f"step={global_step} "
@@ -630,10 +575,7 @@ def main() -> None:
                 f"training_time={training_elapsed:.2f}s"
             )
 
-        if (
-            global_step % training_config.eval_interval == 0
-            or global_step == 1
-        ):
+        if global_step % training_config.eval_interval == 0 or global_step == 1:
             validation_loss = evaluate_loss(
                 model=execution_model,
                 data_loader=val_loader,
@@ -641,10 +583,7 @@ def main() -> None:
                 max_batches=training_config.eval_steps,
             )
 
-            LOGGER.info(
-                f"step={global_step} "
-                f"validation_loss={validation_loss:.4f}"
-            )
+            LOGGER.info(f"step={global_step} validation_loss={validation_loss:.4f}")
 
             is_best = validation_loss < best_validation_loss
             experiment.record(
@@ -662,9 +601,7 @@ def main() -> None:
                     optimizer=optimizer,
                     scheduler=scheduler,
                     global_step=global_step,
-                    best_validation_loss=(
-                        best_validation_loss
-                    ),
+                    best_validation_loss=(best_validation_loss),
                     config=config_snapshot,
                     tokenizer_info=tokenizer_info,
                     seed=training_config.seed,
@@ -677,22 +614,16 @@ def main() -> None:
                     path=str(best_path),
                     best_validation_loss=float(best_validation_loss),
                 )
-                LOGGER.info(
-                    f"best checkpoint 已保存：{best_path}"
-                )
+                LOGGER.info(f"best checkpoint 已保存：{best_path}")
 
-        if (
-            global_step % training_config.save_interval == 0
-        ):
+        if global_step % training_config.save_interval == 0:
             save_checkpoint(
                 path=latest_path,
                 model=model,
                 optimizer=optimizer,
                 scheduler=scheduler,
                 global_step=global_step,
-                best_validation_loss=(
-                    best_validation_loss
-                ),
+                best_validation_loss=(best_validation_loss),
                 config=config_snapshot,
                 tokenizer_info=tokenizer_info,
                 seed=training_config.seed,
@@ -705,9 +636,7 @@ def main() -> None:
                 path=str(latest_path),
                 best_validation_loss=float(best_validation_loss),
             )
-            LOGGER.info(
-                f"latest checkpoint 已保存：{latest_path}"
-            )
+            LOGGER.info(f"latest checkpoint 已保存：{latest_path}")
 
     if last_step > 0:
         save_checkpoint(
@@ -730,9 +659,7 @@ def main() -> None:
             best_validation_loss=float(best_validation_loss),
             latest_checkpoint=str(latest_path),
         )
-        LOGGER.info(
-            f"训练结束，latest checkpoint 已保存：{latest_path}"
-        )
+        LOGGER.info(f"训练结束，latest checkpoint 已保存：{latest_path}")
 
 
 if __name__ == "__main__":

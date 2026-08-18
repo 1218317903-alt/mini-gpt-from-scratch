@@ -57,9 +57,7 @@ def greedy_decode(last_logits: torch.Tensor) -> torch.Tensor:
     if last_logits.ndim != 2:
         raise ValueError("last_logits must have shape [B, V].")
     if last_logits.shape[0] <= 0 or last_logits.shape[1] <= 0:
-        raise ValueError(
-            "last_logits must have positive batch and vocabulary sizes."
-        )
+        raise ValueError("last_logits must have positive batch and vocabulary sizes.")
     return torch.argmax(last_logits, dim=-1)
 
 
@@ -87,9 +85,7 @@ def apply_temperature(
     if last_logits.ndim != 2:
         raise ValueError("last_logits must have shape [B, V].")
     if last_logits.shape[0] <= 0 or last_logits.shape[1] <= 0:
-        raise ValueError(
-            "last_logits must have positive batch and vocabulary sizes."
-        )
+        raise ValueError("last_logits must have positive batch and vocabulary sizes.")
 
     temperature = validate_temperature(temperature)
     scaled_logits = last_logits / temperature
@@ -133,9 +129,7 @@ def apply_top_k(
 
     batch_size, vocab_size = last_logits.shape
     if batch_size <= 0 or vocab_size <= 0:
-        raise ValueError(
-            "last_logits must have positive batch and vocabulary sizes."
-        )
+        raise ValueError("last_logits must have positive batch and vocabulary sizes.")
 
     effective_top_k = validate_top_k(
         top_k,
@@ -194,9 +188,7 @@ def apply_top_p(
 
     batch_size, vocab_size = last_logits.shape
     if batch_size <= 0 or vocab_size <= 0:
-        raise ValueError(
-            "last_logits must have positive batch and vocabulary sizes."
-        )
+        raise ValueError("last_logits must have positive batch and vocabulary sizes.")
 
     effective_top_p = validate_top_p(top_p)
     if effective_top_p is None:
@@ -213,9 +205,7 @@ def apply_top_p(
         dim=-1,
     )
 
-    keep_counts = (
-        cumulative_probabilities < effective_top_p
-    ).sum(dim=-1) + 1
+    keep_counts = (cumulative_probabilities < effective_top_p).sum(dim=-1) + 1
     keep_counts = keep_counts.clamp(
         min=1,
         max=vocab_size,
@@ -250,9 +240,7 @@ def _validate_probability_matrix(
     if probabilities.ndim != 2:
         raise ValueError("probabilities must have shape [B, V].")
     if probabilities.shape[0] <= 0 or probabilities.shape[1] <= 0:
-        raise ValueError(
-            "probabilities must have positive batch and vocabulary sizes."
-        )
+        raise ValueError("probabilities must have positive batch and vocabulary sizes.")
     if (probabilities < 0).any().item():
         raise ValueError("probabilities cannot contain negative values.")
 

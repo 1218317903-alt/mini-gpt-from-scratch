@@ -1,10 +1,10 @@
 """项目通用工具、随机种子和 Checkpoint 工具。"""
 
-import random
 import math
 import os
-from pathlib import Path
+import random
 import tempfile
+from pathlib import Path
 from typing import Any
 
 import torch
@@ -72,10 +72,7 @@ def capture_random_states() -> dict[str, Any]:
     }
 
     if torch.cuda.is_available():
-        states["cuda"] = [
-            state.cpu()
-            for state in torch.cuda.get_rng_state_all()
-        ]
+        states["cuda"] = [state.cpu() for state in torch.cuda.get_rng_state_all()]
 
     return states
 
@@ -87,16 +84,8 @@ def restore_random_states(
     random.setstate(states["python"])
     torch.set_rng_state(states["torch"].detach().cpu())
 
-    if (
-        torch.cuda.is_available()
-        and "cuda" in states
-    ):
-        torch.cuda.set_rng_state_all(
-            [
-                state.detach().cpu()
-                for state in states["cuda"]
-            ]
-        )
+    if torch.cuda.is_available() and "cuda" in states:
+        torch.cuda.set_rng_state_all([state.detach().cpu() for state in states["cuda"]])
 
 
 def save_checkpoint(
@@ -120,14 +109,8 @@ def save_checkpoint(
     checkpoint = {
         "model_state_dict": model.state_dict(),
         "optimizer_state_dict": optimizer.state_dict(),
-        "scheduler_state_dict": (
-            None
-            if scheduler is None
-            else scheduler.state_dict()
-        ),
-        "scaler_state_dict": (
-            None if scaler is None else scaler.state_dict()
-        ),
+        "scheduler_state_dict": (None if scheduler is None else scheduler.state_dict()),
+        "scaler_state_dict": (None if scaler is None else scaler.state_dict()),
         "global_step": global_step,
         "best_validation_loss": best_validation_loss,
         "config": config,
@@ -171,26 +154,15 @@ def load_checkpoint(
     }
     missing_keys = required_keys.difference(checkpoint)
     if missing_keys:
-        raise ValueError(
-            f"Checkpoint 缺少字段：{sorted(missing_keys)}"
-        )
+        raise ValueError(f"Checkpoint 缺少字段：{sorted(missing_keys)}")
 
-    model.load_state_dict(
-        checkpoint["model_state_dict"]
-    )
+    model.load_state_dict(checkpoint["model_state_dict"])
 
     if optimizer is not None:
-        optimizer.load_state_dict(
-            checkpoint["optimizer_state_dict"]
-        )
+        optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
 
-    scheduler_state = checkpoint.get(
-        "scheduler_state_dict"
-    )
-    if (
-        scheduler is not None
-        and scheduler_state is not None
-    ):
+    scheduler_state = checkpoint.get("scheduler_state_dict")
+    if scheduler is not None and scheduler_state is not None:
         scheduler.load_state_dict(scheduler_state)
 
     scaler_state = checkpoint.get("scaler_state_dict")
@@ -210,9 +182,7 @@ def load_checkpoint_payload(
 ) -> dict[str, Any]:
     """只读取 Checkpoint 字典，供构造对应结构的模型使用。"""
     if not path.is_file():
-        raise FileNotFoundError(
-            f"找不到 Checkpoint：{path}"
-        )
+        raise FileNotFoundError(f"找不到 Checkpoint：{path}")
 
     try:
         checkpoint = torch.load(
@@ -288,13 +258,9 @@ class WarmupCosineScheduler:
             raise ValueError("step 必须位于 [1, max_steps] 中。")
 
         if self.warmup_steps > 0 and step <= self.warmup_steps:
-            start_lr = (
-                self.peak_learning_rate * self.warmup_start_factor
-            )
+            start_lr = self.peak_learning_rate * self.warmup_start_factor
             progress = step / self.warmup_steps
-            return start_lr + (
-                self.peak_learning_rate - start_lr
-            ) * progress
+            return start_lr + (self.peak_learning_rate - start_lr) * progress
 
         if not self.cosine_decay:
             return self.peak_learning_rate
@@ -307,9 +273,10 @@ class WarmupCosineScheduler:
             progress = (step - self.warmup_steps) / decay_length
 
         cosine_factor = 0.5 * (1.0 + math.cos(math.pi * progress))
-        return self.minimum_learning_rate + (
-            self.peak_learning_rate - self.minimum_learning_rate
-        ) * cosine_factor
+        return (
+            self.minimum_learning_rate
+            + (self.peak_learning_rate - self.minimum_learning_rate) * cosine_factor
+        )
 
     def _set_learning_rate(self, learning_rate: float) -> None:
         for parameter_group in self.optimizer.param_groups:
@@ -327,13 +294,14 @@ class WarmupCosineScheduler:
 
     def set_completed_steps(self, completed_steps: int) -> None:
         """设置恢复进度，并准备下一次更新的学习率。"""
-        if type(completed_steps) is not int or not 0 <= completed_steps <= self.max_steps:
+        if (
+            type(completed_steps) is not int
+            or not 0 <= completed_steps <= self.max_steps
+        ):
             raise ValueError("completed_steps 超出有效范围。")
         self.completed_steps = completed_steps
         if completed_steps < self.max_steps:
-            self._set_learning_rate(
-                self.learning_rate_for_step(completed_steps + 1)
-            )
+            self._set_learning_rate(self.learning_rate_for_step(completed_steps + 1))
 
     def state_dict(self) -> dict[str, Any]:
         return {
@@ -357,7 +325,5 @@ class WarmupCosineScheduler:
         }
         for name, value in expected.items():
             if state.get(name) != value:
-                raise ValueError(
-                    f"Checkpoint Scheduler 配置不一致：{name}。"
-                )
+                raise ValueError(f"Checkpoint Scheduler 配置不一致：{name}。")
         self.set_completed_steps(int(state["completed_steps"]))

@@ -47,7 +47,7 @@ def test_decode_appends_one_cache_position() -> None:
     )
 
     assert logits.shape == (1, 1, 17)
-    for old_layer, new_layer in zip(cache, updated_cache):
+    for old_layer, new_layer in zip(cache, updated_cache, strict=True):
         old_key, old_value = old_layer
         new_key, new_value = new_layer
         assert new_key.size(2) == old_key.size(2) + 1

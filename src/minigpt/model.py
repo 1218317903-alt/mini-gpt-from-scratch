@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
+from typing import cast
+
 import torch
 from torch import nn
 
 from minigpt.attention import KVCache, MultiHeadCausalSelfAttention
-
 
 ModelKVCache = tuple[KVCache, ...]
 
@@ -106,9 +107,7 @@ class FeedForward(nn.Module):
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         if hidden_states.ndim != 3:
             raise ValueError("hidden_states 必须是 [B,T,C]。")
-        return self.dropout(
-            self.fc_out(self.activation(self.fc_in(hidden_states)))
-        )
+        return self.dropout(self.fc_out(self.activation(self.fc_in(hidden_states))))
 
 
 class TransformerBlock(nn.Module):
@@ -244,9 +243,7 @@ class MiniGPT(nn.Module):
         if any(type(value) is not int or value <= 0 for value in values.values()):
             raise ValueError("模型整数配置必须全部是正整数。")
         if embedding_dim % num_heads != 0:
-            raise ValueError(
-                "embedding_dim 必须能被 num_heads 整除。"
-            )
+            raise ValueError("embedding_dim 必须能被 num_heads 整除。")
         if not isinstance(dropout, (int, float)) or isinstance(dropout, bool):
             raise TypeError("dropout 必须是数字。")
         if not 0.0 <= float(dropout) < 1.0:
@@ -287,7 +284,7 @@ class MiniGPT(nn.Module):
 
         if tie_weights:
             self.lm_head.tie_weights(
-                self.token_embedding.embedding.weight
+                cast(nn.Parameter, self.token_embedding.embedding.weight)
             )
 
     @staticmethod
@@ -324,9 +321,7 @@ class MiniGPT(nn.Module):
             raise ValueError("输入序列长度超过 block_size。")
 
         if past_key_values is None:
-            layer_past_values: tuple[KVCache | None, ...] = (
-                (None,) * self.num_layers
-            )
+            layer_past_values: tuple[KVCache | None, ...] = (None,) * self.num_layers
             past_length = 0
         else:
             if len(past_key_values) != self.num_layers:
@@ -348,7 +343,11 @@ class MiniGPT(nn.Module):
 
         attention_weights: list[torch.Tensor] = []
         present_key_values: list[KVCache] = []
-        for block, layer_past in zip(self.blocks, layer_past_values):
+        for block, layer_past in zip(
+            self.blocks,
+            layer_past_values,
+            strict=True,
+        ):
             block_result = block(
                 hidden_states,
                 past_key_value=layer_past,
@@ -384,9 +383,7 @@ class MiniGPT(nn.Module):
 def count_parameters(model: nn.Module) -> int:
     """统计可训练参数数量。"""
     return sum(
-        parameter.numel()
-        for parameter in model.parameters()
-        if parameter.requires_grad
+        parameter.numel() for parameter in model.parameters() if parameter.requires_grad
     )
 
 
@@ -422,7 +419,6 @@ def count_parameters_by_group(model: nn.Module) -> dict[str, int]:
     total = count_parameters(model)
     if grouped_total != total:
         raise RuntimeError(
-            "参数分组总和与独立可训练参数总量不一致："
-            f"{grouped_total} != {total}"
+            f"参数分组总和与独立可训练参数总量不一致：{grouped_total} != {total}"
         )
     return groups

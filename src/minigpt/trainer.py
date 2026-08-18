@@ -1,5 +1,6 @@
+from collections.abc import Sequence
 from contextlib import nullcontext
-from typing import Any, Sequence
+from typing import Any
 
 import torch
 import torch.nn.functional as F
@@ -29,9 +30,7 @@ def compute_language_model_loss(
     batch_size, sequence_length, vocab_size = logits.shape
 
     if targets.shape != (batch_size, sequence_length):
-        raise ValueError(
-            "targets 的形状必须与 logits 的前两维一致"
-        )
+        raise ValueError("targets 的形状必须与 logits 的前两维一致")
 
     flattened_logits = logits.reshape(
         batch_size * sequence_length,
@@ -201,10 +200,7 @@ def evaluate_loss(
     try:
         with torch.no_grad():
             for inputs, targets in data_loader:
-                if (
-                    max_batches is not None
-                    and batch_count >= max_batches
-                ):
+                if max_batches is not None and batch_count >= max_batches:
                     break
 
                 inputs = inputs.to(device)
@@ -218,9 +214,7 @@ def evaluate_loss(
                     )
 
                 if not torch.isfinite(loss).item():
-                    raise FloatingPointError(
-                        "验证 Loss 出现 NaN 或 Inf。"
-                    )
+                    raise FloatingPointError("验证 Loss 出现 NaN 或 Inf。")
 
                 total_loss += loss.item()
                 batch_count += 1
@@ -229,8 +223,6 @@ def evaluate_loss(
             model.train()
 
     if batch_count == 0:
-        raise ValueError(
-            "验证 DataLoader 没有提供任何 Batch。"
-        )
+        raise ValueError("验证 DataLoader 没有提供任何 Batch。")
 
     return total_loss / batch_count

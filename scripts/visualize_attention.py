@@ -16,7 +16,6 @@ from minigpt.utils import (
     load_checkpoint_payload,
 )
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -145,9 +144,7 @@ def main() -> None:
     figure.tight_layout()
 
     output_path = (
-        args.output
-        if args.output.is_absolute()
-        else PROJECT_ROOT / args.output
+        args.output if args.output.is_absolute() else PROJECT_ROOT / args.output
     )
     output_path.parent.mkdir(parents=True, exist_ok=True)
     figure.savefig(output_path, dpi=180)

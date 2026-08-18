@@ -9,7 +9,6 @@ from minigpt.config import load_data_config, load_model_config
 from minigpt.model import MiniGPT, count_parameters, count_parameters_by_group
 from minigpt.tokenizer import CharacterTokenizer
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -67,9 +66,7 @@ def main() -> None:
     num_layers = args.num_layers or model_config.num_layers
     block_size = args.block_size or data_config.block_size
     tie_weights = (
-        model_config.tie_weights
-        if args.tie_weights is None
-        else args.tie_weights
+        model_config.tie_weights if args.tie_weights is None else args.tie_weights
     )
 
     model = MiniGPT(
