@@ -6,9 +6,13 @@ __pycache__/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+*.egg-info/
 checkpoints/
 runs/
 logs/
+hf_lora/artifacts/*
+!hf_lora/artifacts/.gitkeep
+review_input.docx
 data/raw/*
 data/processed/*
 !data/raw/.gitkeep

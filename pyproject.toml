@@ -1,6 +1,56 @@
 [project]
 name = "mini-gpt-from-scratch"
-requires-python = ">=3.11"
-dependencies = []
+version = "0.1.0"
+description = "A tested decoder-only MiniGPT and Hugging Face LoRA learning project."
+readme = "README.md"
+requires-python = ">=3.11,<3.13"
+dependencies = [
+    "pyyaml>=6.0.2,<7",
+    "torch>=2.6,<3",
+]
 
-# 后续可在 dependencies 中添加 PyTorch、PyYAML、pytest 等依赖。
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3,<9",
+    "pytest-cov>=6,<8",
+]
+hf = [
+    "accelerate>=1,<2",
+    "datasets>=3,<5",
+    "peft>=0.15,<1",
+    "safetensors>=0.5,<1",
+    "transformers>=4.49,<6",
+]
+viz = ["matplotlib>=3.9,<4"]
+
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src", "hf_lora/src"]
+
+[tool.uv.sources]
+torch = [
+    { index = "pytorch-cu126", marker = "sys_platform == 'win32'" },
+]
+
+[[tool.uv.index]]
+name = "pytorch-cu126"
+url = "https://download.pytorch.org/whl/cu126"
+explicit = true
+
+[tool.pytest.ini_options]
+pythonpath = [".", "src", "hf_lora/src"]
+testpaths = ["tests", "hf_lora/tests"]
+markers = [
+    "integration: requires the locally cached Hugging Face model",
+]
+
+[tool.coverage.run]
+source = ["minigpt", "hf_lora"]
+branch = true
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
