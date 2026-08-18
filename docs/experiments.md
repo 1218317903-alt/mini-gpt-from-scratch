@@ -98,13 +98,15 @@ generated_text:
 
 ## 阶段五：实验规范
 
-阶段五先运行基线，再一次只改变一个主要变量。当前只提供记录模板；尚未运行的结果不得提前填写。
+阶段五先运行基线，再一次只改变一个主要变量。首个 Tiny Shakespeare FP32 正式基线
+已经完成，结果见 [`tiny_shakespeare_baseline.md`](tiny_shakespeare_baseline.md)；尚未
+运行的消融结果不得提前填写。
 
 ### 基线候选
 
 ```text
 block_size: 64
-batch_size: 4
+batch_size: 32
 embedding_dim: 128
 num_heads: 4
 num_layers: 4

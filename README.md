@@ -13,7 +13,10 @@
 
 阶段六位于独立目录 [`hf_lora/`](hf_lora/README.md)，不会改写前五阶段的 MiniGPT。它使用小型真实预训练 Causal LM，将字符级数据流、Causal LM Loss、生成和训练知识迁移到聊天模板、response-only SFT 与 LoRA。
 
-本项目用于教学和实验。阶段五已包含可选 `torch.compile`、KV Cache 与缓存一致性/速度测试；正式消融结论仍需使用真实语料按统一预算运行。
+本项目用于教学和实验。阶段五已包含可选 `torch.compile`、KV Cache 与缓存一致性/速度测试；
+首个真实语料 FP32 基线已经完成，详见
+[`docs/tiny_shakespeare_baseline.md`](docs/tiny_shakespeare_baseline.md)。后续消融仍需按
+相同数据与训练预算逐项运行。
 
 ## 环境
 
