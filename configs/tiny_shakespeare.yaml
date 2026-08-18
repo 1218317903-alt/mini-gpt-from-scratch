@@ -1,1 +1,31 @@
-# 配置占位：后续阶段填写 Tiny Shakespeare 相关配置。
+data:
+  raw_path: data/raw/tiny_shakespeare.txt
+  train_path: data/processed/train.txt
+  val_path: data/processed/val.txt
+  test_path: data/processed/test.txt
+  tokenizer_path: data/processed/tokenizer.json
+
+  train_ratio: 0.8
+  val_ratio: 0.1
+
+  block_size: 64
+  batch_size: 4
+
+model:
+  embedding_dim: 128
+  num_heads: 4
+  num_layers: 4
+  expansion_factor: 4
+  tie_weights: false
+
+training:
+  learning_rate: 0.0003
+  weight_decay: 0.01
+  max_steps: 100
+  grad_clip_norm: 1.0
+  log_interval: 1
+  eval_interval: 10
+  eval_steps: 20
+  save_interval: 10
+  seed: 42
+  overfit_steps: 50
