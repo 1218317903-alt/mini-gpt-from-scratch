@@ -3,6 +3,7 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.testclient import TestClient
 
+from agent.orchestrator import AgentResult, AgentTrace
 from minigpt_service.app import (
     SERVICE_NAME,
     SERVICE_VERSION,
@@ -11,7 +12,7 @@ from minigpt_service.app import (
     create_app_from_environment,
 )
 from minigpt_service.chat_model import ChatResult
-from minigpt_service.schemas import ChatRequest, GenerateRequest
+from minigpt_service.schemas import AgentRequest, ChatRequest, GenerateRequest
 
 
 def test_create_app_returns_configured_fastapi_application() -> None:
@@ -59,6 +60,7 @@ def test_environment_factory_configures_chat_backend_without_minigpt_paths(
     created_app = create_app_from_environment()
 
     assert "/chat" in created_app.openapi()["paths"]
+    assert "/agent/chat" in created_app.openapi()["paths"]
 
 
 def test_openapi_schema_exposes_service_metadata() -> None:
@@ -70,6 +72,7 @@ def test_openapi_schema_exposes_service_metadata() -> None:
     assert "/ready" in schema["paths"]
     assert "/generate" in schema["paths"]
     assert "/chat" in schema["paths"]
+    assert "/agent/chat" in schema["paths"]
 
 
 class _FakeModelService:
@@ -143,6 +146,33 @@ class _FakeChatModel:
         )
 
 
+class _FakeAgent:
+    is_ready = True
+
+    def close(self) -> None:
+        pass
+
+    def run(self, messages, **_: object) -> AgentResult:
+        return AgentResult(
+            text=f"agent reply to: {messages[-1].content}",
+            model="fake-agent",
+            steps=2,
+            tool_calls=1,
+            finish_reason="stop",
+            trace=(
+                AgentTrace(
+                    step=1,
+                    call_id="call-1",
+                    name="calculator",
+                    arguments={"expression": "17*6"},
+                    status="ok",
+                    content="102",
+                    duration_ms=0.2,
+                ),
+            ),
+        )
+
+
 def test_chat_route_forwards_messages_and_returns_usage() -> None:
     service_app = create_app(chat_model=_FakeChatModel())  # type: ignore[arg-type]
     route = next(route for route in service_app.routes if route.path == "/chat")
@@ -172,6 +202,31 @@ def test_chat_route_returns_service_unavailable_without_chat_model() -> None:
         assert error.status_code == 503
     else:
         raise AssertionError("Expected /chat to reject an unloaded chat model")
+
+
+def test_agent_route_returns_trace_and_final_answer() -> None:
+    service_app = create_app(agent=_FakeAgent())  # type: ignore[arg-type]
+    route = next(route for route in service_app.routes if route.path == "/agent/chat")
+
+    response = route.endpoint(
+        AgentRequest(messages=[{"role": "user", "content": "17乘以6？"}])
+    )
+
+    assert response.generated_text == "agent reply to: 17乘以6？"
+    assert response.tool_calls == 1
+    assert response.trace[0].content == "102"
+
+
+def test_agent_route_returns_service_unavailable_without_agent() -> None:
+    service_app = create_app()
+    route = next(route for route in service_app.routes if route.path == "/agent/chat")
+
+    try:
+        route.endpoint(AgentRequest(messages=[{"role": "user", "content": "hello"}]))
+    except HTTPException as error:
+        assert error.status_code == 503
+    else:
+        raise AssertionError("Expected /agent/chat to reject an unavailable agent")
 
 
 def test_request_id_is_propagated_and_structured_request_is_logged(caplog) -> None:

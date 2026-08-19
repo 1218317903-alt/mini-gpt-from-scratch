@@ -136,6 +136,45 @@ class ChatResponse(BaseModel):
     model: str
 
 
+class AgentRequest(ChatRequest):
+    """Input accepted by the bounded tool-using Agent endpoint."""
+
+    max_steps: int = Field(
+        default=6,
+        ge=1,
+        le=6,
+        description="Maximum number of model/tool loop iterations.",
+    )
+
+
+class AgentTraceResponse(BaseModel):
+    """One tool execution in an Agent response trace."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    step: int = Field(ge=1)
+    call_id: str = Field(min_length=1)
+    name: str = Field(min_length=1)
+    arguments: dict[str, Any]
+    status: Literal["ok", "error"]
+    content: str
+    duration_ms: float = Field(ge=0)
+
+
+class AgentResponse(BaseModel):
+    """Stable response returned by the bounded Agent endpoint."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    message: ChatMessage
+    generated_text: str
+    model: str
+    steps: int = Field(ge=1)
+    tool_calls: int = Field(ge=0)
+    finish_reason: Literal["stop", "max_steps"]
+    trace: list[AgentTraceResponse]
+
+
 class HealthResponse(BaseModel):
     """Response returned by the liveness endpoint."""
 

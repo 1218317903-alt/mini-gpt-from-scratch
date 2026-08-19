@@ -55,7 +55,7 @@ markers = [
 ]
 
 [tool.coverage.run]
-source = ["minigpt", "hf_lora"]
+source = ["minigpt", "hf_lora", "agent"]
 branch = true
 
 [tool.coverage.report]

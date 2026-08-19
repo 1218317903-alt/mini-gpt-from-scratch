@@ -4,6 +4,9 @@ import pytest
 from pydantic import ValidationError
 
 from minigpt_service.schemas import (
+    AgentRequest,
+    AgentResponse,
+    AgentTraceResponse,
     ChatMessage,
     ChatRequest,
     ChatResponse,
@@ -111,6 +114,35 @@ def test_chat_response_has_stable_shape() -> None:
         "finish_reason": "stop",
         "model": "Qwen/Qwen2.5-0.5B-Instruct",
     }
+
+
+def test_agent_request_and_response_have_stable_shape() -> None:
+    request = AgentRequest(
+        messages=[{"role": "user", "content": "17乘以6？"}],
+    )
+    response = AgentResponse(
+        message=ChatMessage(role="assistant", content="102"),
+        generated_text="102",
+        model="fake-agent",
+        steps=2,
+        tool_calls=1,
+        finish_reason="stop",
+        trace=[
+            AgentTraceResponse(
+                step=1,
+                call_id="call-1",
+                name="calculator",
+                arguments={"expression": "17*6"},
+                status="ok",
+                content="102",
+                duration_ms=0.2,
+            )
+        ],
+    )
+
+    assert request.max_steps == 6
+    assert response.trace[0].name == "calculator"
+    assert response.finish_reason == "stop"
 
 
 def test_health_and_ready_responses_have_stable_shape() -> None:

@@ -18,6 +18,9 @@ from starlette.middleware.base import RequestResponseEndpoint
 
 from minigpt_service.config import ChatServiceConfig, ServiceConfig
 from minigpt_service.schemas import (
+    AgentRequest,
+    AgentResponse,
+    AgentTraceResponse,
     ChatMessage,
     ChatRequest,
     ChatResponse,
@@ -29,6 +32,7 @@ from minigpt_service.schemas import (
 )
 
 if TYPE_CHECKING:
+    from agent.orchestrator import AgentOrchestrator
     from minigpt_service.chat_model import ChatModel
     from minigpt_service.model_service import ModelService
 
@@ -101,6 +105,7 @@ def _log_request(
 def create_app(
     model_service: ModelService | None = None,
     chat_model: ChatModel | None = None,
+    agent: AgentOrchestrator | None = None,
 ) -> FastAPI:
     """Create a fresh FastAPI application instance."""
 
@@ -113,8 +118,12 @@ def create_app(
             if chat_model is not None:
                 chat_model.load()
                 _app.state.chat_model = chat_model
+            if agent is not None:
+                _app.state.agent = agent
             yield
         finally:
+            if agent is not None:
+                agent.close()
             if model_service is not None:
                 model_service.close()
             if chat_model is not None:
@@ -214,7 +223,8 @@ def create_app(
     def ready() -> ReadyResponse:
         model_ready = model_service is not None and model_service.is_ready
         chat_ready = chat_model is not None and chat_model.is_ready
-        if not model_ready and not chat_ready:
+        agent_ready = agent is not None and agent.is_ready
+        if not model_ready and not chat_ready and not agent_ready:
             raise HTTPException(
                 status_code=503,
                 detail="No model backend is ready.",
@@ -295,6 +305,55 @@ def create_app(
             model=result.model,
         )
 
+    @service_app.post(
+        "/agent/chat",
+        response_model=AgentResponse,
+        summary="Answer a request with bounded tool calls",
+    )
+    def agent_chat(request: AgentRequest) -> AgentResponse:
+        if agent is None or not agent.is_ready:
+            raise HTTPException(
+                status_code=503,
+                detail="Agent service is not ready.",
+            )
+
+        try:
+            result = agent.run(
+                request.messages,
+                max_new_tokens=request.max_new_tokens,
+                temperature=request.temperature,
+                top_k=request.top_k,
+                top_p=request.top_p,
+                greedy=request.greedy,
+                seed=request.seed,
+                max_steps=request.max_steps,
+            )
+        except ValueError as error:
+            raise HTTPException(status_code=400, detail=str(error)) from error
+        except RuntimeError as error:
+            raise HTTPException(status_code=503, detail=str(error)) from error
+
+        return AgentResponse(
+            message=ChatMessage(role="assistant", content=result.text),
+            generated_text=result.text,
+            model=result.model,
+            steps=result.steps,
+            tool_calls=result.tool_calls,
+            finish_reason=result.finish_reason,
+            trace=[
+                AgentTraceResponse(
+                    step=trace.step,
+                    call_id=trace.call_id,
+                    name=trace.name,
+                    arguments=trace.arguments,
+                    status=trace.status,
+                    content=trace.content,
+                    duration_ms=trace.duration_ms,
+                )
+                for trace in result.trace
+            ],
+        )
+
     return service_app
 
 
@@ -307,11 +366,17 @@ def create_app_from_environment() -> FastAPI:
 
     model_service = None
     chat_model = None
+    agent = None
     if service_config is not None:
         from minigpt_service.model_service import ModelService
 
         model_service = ModelService(service_config)
     if chat_config is not None:
+        from agent import (
+            AgentOrchestrator,
+            ChatModelAgentAdapter,
+            build_default_registry,
+        )
         from minigpt_service.chat_model import create_huggingface_chat_model
         from minigpt_service.model_service import select_device
 
@@ -319,8 +384,12 @@ def create_app_from_environment() -> FastAPI:
             chat_config,
             select_device(chat_config.device),
         )
+        agent = AgentOrchestrator(
+            ChatModelAgentAdapter(chat_model),
+            build_default_registry(),
+        )
 
-    return create_app(model_service, chat_model)
+    return create_app(model_service, chat_model, agent)
 
 
 app = create_app_from_environment()

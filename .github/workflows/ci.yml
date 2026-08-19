@@ -53,4 +53,4 @@ jobs:
         run: uv run mypy
 
       - name: Run test suite
-        run: uv run pytest -q --cov=minigpt --cov=hf_lora --cov-report=term-missing
+        run: uv run pytest -q --cov=minigpt --cov=hf_lora --cov=agent --cov-report=term-missing

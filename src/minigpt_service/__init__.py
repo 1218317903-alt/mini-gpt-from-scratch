@@ -6,6 +6,9 @@ from typing import Any
 __all__ = [
     "GenerateRequest",
     "GenerateResponse",
+    "AgentRequest",
+    "AgentResponse",
+    "AgentTraceResponse",
     "ChatMessage",
     "ChatRequest",
     "ChatResponse",
@@ -29,6 +32,9 @@ def __getattr__(name: str) -> Any:
     modules = {
         "GenerateRequest": "minigpt_service.schemas",
         "GenerateResponse": "minigpt_service.schemas",
+        "AgentRequest": "minigpt_service.schemas",
+        "AgentResponse": "minigpt_service.schemas",
+        "AgentTraceResponse": "minigpt_service.schemas",
         "ChatMessage": "minigpt_service.schemas",
         "ChatRequest": "minigpt_service.schemas",
         "ChatResponse": "minigpt_service.schemas",
