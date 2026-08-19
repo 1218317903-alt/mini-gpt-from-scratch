@@ -16,8 +16,11 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import RequestResponseEndpoint
 
-from minigpt_service.config import ServiceConfig
+from minigpt_service.config import ChatServiceConfig, ServiceConfig
 from minigpt_service.schemas import (
+    ChatMessage,
+    ChatRequest,
+    ChatResponse,
     ErrorResponse,
     GenerateRequest,
     GenerateResponse,
@@ -26,10 +29,11 @@ from minigpt_service.schemas import (
 )
 
 if TYPE_CHECKING:
+    from minigpt_service.chat_model import ChatModel
     from minigpt_service.model_service import ModelService
 
 SERVICE_NAME = "MiniGPT Inference Service"
-SERVICE_VERSION = "0.1.0"
+SERVICE_VERSION = "0.2.0"
 REQUEST_ID_HEADER = "X-Request-ID"
 logger = logging.getLogger("minigpt_service.http")
 
@@ -94,24 +98,35 @@ def _log_request(
     logger.info(json.dumps(payload, ensure_ascii=False, sort_keys=True))
 
 
-def create_app(model_service: ModelService | None = None) -> FastAPI:
+def create_app(
+    model_service: ModelService | None = None,
+    chat_model: ChatModel | None = None,
+) -> FastAPI:
     """Create a fresh FastAPI application instance."""
 
     @asynccontextmanager
     async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
-        if model_service is not None:
-            model_service.load()
-            _app.state.model_service = model_service
         try:
+            if model_service is not None:
+                model_service.load()
+                _app.state.model_service = model_service
+            if chat_model is not None:
+                chat_model.load()
+                _app.state.chat_model = chat_model
             yield
         finally:
             if model_service is not None:
                 model_service.close()
+            if chat_model is not None:
+                chat_model.close()
 
     service_app = FastAPI(
         title=SERVICE_NAME,
         version=SERVICE_VERSION,
-        description="HTTP inference service for the from-scratch MiniGPT model.",
+        description=(
+            "HTTP inference service for the from-scratch MiniGPT and "
+            "Hugging Face chat backends."
+        ),
         lifespan=lifespan,
     )
 
@@ -197,10 +212,12 @@ def create_app(model_service: ModelService | None = None) -> FastAPI:
         summary="Check whether a model is ready for inference",
     )
     def ready() -> ReadyResponse:
-        if model_service is None or not model_service.is_ready:
+        model_ready = model_service is not None and model_service.is_ready
+        chat_ready = chat_model is not None and chat_model.is_ready
+        if not model_ready and not chat_ready:
             raise HTTPException(
                 status_code=503,
-                detail="Model service is not ready.",
+                detail="No model backend is ready.",
             )
         return ReadyResponse(status="ready")
 
@@ -242,18 +259,68 @@ def create_app(model_service: ModelService | None = None) -> FastAPI:
             finish_reason="length",
         )
 
+    @service_app.post(
+        "/chat",
+        response_model=ChatResponse,
+        summary="Generate an assistant response from chat messages",
+    )
+    def chat_text(request: ChatRequest) -> ChatResponse:
+        if chat_model is None or not chat_model.is_ready:
+            raise HTTPException(
+                status_code=503,
+                detail="Chat model service is not ready.",
+            )
+
+        try:
+            result = chat_model.chat(
+                request.messages,
+                max_new_tokens=request.max_new_tokens,
+                temperature=request.temperature,
+                top_k=request.top_k,
+                top_p=request.top_p,
+                greedy=request.greedy,
+                seed=request.seed,
+            )
+        except ValueError as error:
+            raise HTTPException(status_code=400, detail=str(error)) from error
+        except RuntimeError as error:
+            raise HTTPException(status_code=503, detail=str(error)) from error
+
+        return ChatResponse(
+            message=ChatMessage(role="assistant", content=result.text),
+            generated_text=result.text,
+            prompt_tokens=result.prompt_tokens,
+            generated_tokens=result.generated_tokens,
+            finish_reason=result.finish_reason,
+            model=result.model,
+        )
+
     return service_app
 
 
 def create_app_from_environment() -> FastAPI:
     """Create the production app using ``MINIGPT_*`` environment variables."""
     service_config = ServiceConfig.from_environment()
-    if service_config is None:
+    chat_config = ChatServiceConfig.from_environment()
+    if service_config is None and chat_config is None:
         return create_app()
 
-    from minigpt_service.model_service import ModelService
+    model_service = None
+    chat_model = None
+    if service_config is not None:
+        from minigpt_service.model_service import ModelService
 
-    return create_app(ModelService(service_config))
+        model_service = ModelService(service_config)
+    if chat_config is not None:
+        from minigpt_service.chat_model import create_huggingface_chat_model
+        from minigpt_service.model_service import select_device
+
+        chat_model = create_huggingface_chat_model(
+            chat_config,
+            select_device(chat_config.device),
+        )
+
+    return create_app(model_service, chat_model)
 
 
 app = create_app_from_environment()

@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from minigpt_service.config import ServiceConfig
+from minigpt_service.config import ChatServiceConfig, ServiceConfig
 
 
 def test_environment_config_is_optional(monkeypatch) -> None:
@@ -58,3 +58,47 @@ def test_environment_config_rejects_invalid_compile_flag(
 
     with pytest.raises(ValueError, match="MINIGPT_COMPILE"):
         ServiceConfig.from_environment()
+
+
+def test_chat_environment_config_is_optional(monkeypatch) -> None:
+    monkeypatch.delenv("MINIGPT_CHAT_MODEL_SOURCE", raising=False)
+    monkeypatch.delenv("MINIGPT_CHAT_ADAPTER_PATH", raising=False)
+
+    assert ChatServiceConfig.from_environment() is None
+
+
+def test_chat_environment_config_parses_local_model_settings(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    adapter_path = tmp_path / "adapter"
+    monkeypatch.setenv(
+        "MINIGPT_CHAT_MODEL_SOURCE",
+        "Qwen/Qwen2.5-0.5B-Instruct",
+    )
+    monkeypatch.setenv("MINIGPT_CHAT_ADAPTER_PATH", str(adapter_path))
+    monkeypatch.setenv("MINIGPT_DEVICE", "cpu")
+    monkeypatch.setenv("MINIGPT_CHAT_DTYPE", "float32")
+    monkeypatch.setenv("MINIGPT_CHAT_MAX_INPUT_TOKENS", "2048")
+    monkeypatch.setenv("MINIGPT_CHAT_LOCAL_FILES_ONLY", "yes")
+
+    config = ChatServiceConfig.from_environment()
+
+    assert config == ChatServiceConfig(
+        model_source="Qwen/Qwen2.5-0.5B-Instruct",
+        adapter_path=adapter_path,
+        device="cpu",
+        dtype="float32",
+        max_input_tokens=2048,
+        local_files_only=True,
+    )
+
+
+def test_chat_environment_config_requires_model_source(
+    monkeypatch, tmp_path: Path
+) -> None:
+    monkeypatch.delenv("MINIGPT_CHAT_MODEL_SOURCE", raising=False)
+    monkeypatch.setenv("MINIGPT_CHAT_ADAPTER_PATH", str(tmp_path / "adapter"))
+
+    with pytest.raises(ValueError, match="MINIGPT_CHAT_MODEL_SOURCE"):
+        ChatServiceConfig.from_environment()

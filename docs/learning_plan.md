@@ -81,8 +81,8 @@
 ## 当前状态
 
 阶段一到七已完成。阶段一到五保留从零实现路径；阶段六位于独立的 `hf_lora/`，
-不会改写 MiniGPT；阶段七完成工程化、真实基线和单变量实验。下一阶段进入模型服务化，
-之后再学习 RAG 与 Agent。
+不会改写 MiniGPT；阶段七完成工程化、真实基线和单变量实验。阶段八完成服务化，
+阶段九完成真实聊天后端；下一阶段进入工具调用与 RAG。
 
 ## 阶段八：模型服务化
 
@@ -104,3 +104,16 @@
 当前完成实现七：提供基于锁定依赖的 Docker 镜像、健康检查和环境变量启动配置。
 当前完成实现八：加入基础 HTTP 负载测试、性能 JSON 记录和阶段验收文档。
 后续实现按上述顺序推进。
+
+## 阶段九：真实聊天后端
+
+1. 统一 `ChatModel`、`ChatResult` 和消息角色契约
+2. Hugging Face Instruct 模型与 Chat Template 推理
+3. 可选 PEFT LoRA Adapter 加载与独立恢复
+4. Greedy、Temperature、Top-k、Top-p、seed 和 EOS 停止
+5. Prompt/生成 Token 统计与上下文长度校验
+6. FastAPI `POST /chat` 与阶段八 `/generate` 并存
+7. 环境变量配置、离线模型缓存和真实接口验收
+
+当前完成：阶段九七项实现均已落地。下一阶段进入工具注册、工具执行和 Agent 循环，
+随后加入 RAG。

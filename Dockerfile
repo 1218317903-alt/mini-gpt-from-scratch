@@ -9,11 +9,12 @@ WORKDIR /app
 
 # Install locked runtime dependencies before copying source for better layer reuse.
 COPY pyproject.toml uv.lock README.md ./
-RUN uv sync --locked --no-dev --extra service --no-install-project
+RUN uv sync --locked --no-dev --extra service --extra hf --no-install-project
 
 COPY src ./src
+COPY hf_lora/src ./hf_lora/src
 COPY configs ./configs
-RUN uv sync --locked --no-dev --extra service
+RUN uv sync --locked --no-dev --extra service --extra hf
 
 ENV PATH="/app/.venv/bin:$PATH" \
     MINIGPT_DEVICE=auto

@@ -10,7 +10,8 @@ from minigpt_service.app import (
     create_app,
     create_app_from_environment,
 )
-from minigpt_service.schemas import GenerateRequest
+from minigpt_service.chat_model import ChatResult
+from minigpt_service.schemas import ChatRequest, GenerateRequest
 
 
 def test_create_app_returns_configured_fastapi_application() -> None:
@@ -18,7 +19,7 @@ def test_create_app_returns_configured_fastapi_application() -> None:
 
     assert isinstance(created_app, FastAPI)
     assert created_app.title == SERVICE_NAME
-    assert created_app.version == SERVICE_VERSION
+    assert created_app.version == "0.2.0"
 
 
 def test_create_app_returns_independent_instances() -> None:
@@ -34,11 +35,30 @@ def test_environment_factory_starts_health_only_without_model_paths(
 ) -> None:
     monkeypatch.delenv("MINIGPT_CONFIG_PATH", raising=False)
     monkeypatch.delenv("MINIGPT_CHECKPOINT_PATH", raising=False)
+    monkeypatch.delenv("MINIGPT_CHAT_MODEL_SOURCE", raising=False)
+    monkeypatch.delenv("MINIGPT_CHAT_ADAPTER_PATH", raising=False)
 
     created_app = create_app_from_environment()
 
     assert isinstance(created_app, FastAPI)
     assert "/health" in created_app.openapi()["paths"]
+
+
+def test_environment_factory_configures_chat_backend_without_minigpt_paths(
+    monkeypatch,
+) -> None:
+    monkeypatch.delenv("MINIGPT_CONFIG_PATH", raising=False)
+    monkeypatch.delenv("MINIGPT_CHECKPOINT_PATH", raising=False)
+    monkeypatch.setenv(
+        "MINIGPT_CHAT_MODEL_SOURCE",
+        "Qwen/Qwen2.5-0.5B-Instruct",
+    )
+    monkeypatch.setenv("MINIGPT_CHAT_LOCAL_FILES_ONLY", "true")
+    monkeypatch.setenv("MINIGPT_DEVICE", "cpu")
+
+    created_app = create_app_from_environment()
+
+    assert "/chat" in created_app.openapi()["paths"]
 
 
 def test_openapi_schema_exposes_service_metadata() -> None:
@@ -49,6 +69,7 @@ def test_openapi_schema_exposes_service_metadata() -> None:
     assert "/health" in schema["paths"]
     assert "/ready" in schema["paths"]
     assert "/generate" in schema["paths"]
+    assert "/chat" in schema["paths"]
 
 
 class _FakeModelService:
@@ -103,6 +124,56 @@ def test_generate_route_returns_service_unavailable_without_model() -> None:
         raise AssertionError("Expected /generate to reject an unloaded service")
 
 
+class _FakeChatModel:
+    is_ready = True
+
+    def load(self) -> None:
+        pass
+
+    def close(self) -> None:
+        pass
+
+    def chat(self, messages, **_: object) -> ChatResult:
+        return ChatResult(
+            text=f"reply to: {messages[-1].content}",
+            prompt_tokens=4,
+            generated_tokens=3,
+            finish_reason="stop",
+            model="fake-chat",
+        )
+
+
+def test_chat_route_forwards_messages_and_returns_usage() -> None:
+    service_app = create_app(chat_model=_FakeChatModel())  # type: ignore[arg-type]
+    route = next(route for route in service_app.routes if route.path == "/chat")
+
+    response = route.endpoint(
+        ChatRequest(
+            messages=[
+                {"role": "system", "content": "be concise"},
+                {"role": "user", "content": "hello"},
+            ]
+        )
+    )
+
+    assert response.generated_text == "reply to: hello"
+    assert response.message.role == "assistant"
+    assert response.generated_tokens == 3
+    assert response.model == "fake-chat"
+
+
+def test_chat_route_returns_service_unavailable_without_chat_model() -> None:
+    service_app = create_app()
+    route = next(route for route in service_app.routes if route.path == "/chat")
+
+    try:
+        route.endpoint(ChatRequest(messages=[{"role": "user", "content": "Hi"}]))
+    except HTTPException as error:
+        assert error.status_code == 503
+    else:
+        raise AssertionError("Expected /chat to reject an unloaded chat model")
+
+
 def test_request_id_is_propagated_and_structured_request_is_logged(caplog) -> None:
     service_app = create_app()
     caplog.set_level("INFO", logger="minigpt_service.http")
@@ -126,7 +197,7 @@ def test_errors_include_request_id_and_use_common_envelope() -> None:
     assert response.status_code == 503
     assert response.headers["X-Request-ID"] == "not-ready"
     assert response.json() == {
-        "detail": "Model service is not ready.",
+        "detail": "No model backend is ready.",
         "request_id": "not-ready",
     }
 

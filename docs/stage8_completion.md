@@ -64,13 +64,10 @@ docker build -t minigpt-service:local .
 
 验收日期：2026-08-19
 
-本次复验没有下载或安装依赖，直接复用了本机已有环境：项目 `.venv` 提供 Python
-3.11.9、PyTorch 2.13.0+cpu、Transformers 5.15.0、PEFT、Datasets、Ruff 和 Mypy；
-本机 Python 3.11 的 site-packages 提供 FastAPI 0.115.6 与 Uvicorn 0.34.0。
-
-现有 FastAPI/Uvicorn 版本分别低于 `pyproject.toml` 声明的 0.116/0.35 最低版本；在不
-下载依赖的前提下，本次仅验证了兼容性和实际运行结果，严格的锁文件环境复现仍需后续
-在允许安装依赖时补做。
+阶段 0 初次复验时没有下载或安装依赖，先复用了本机已有环境；随后阶段一开始前已获
+授权按 `uv.lock` 升级 `.venv`。当前项目环境为 Python 3.11.9、PyTorch 2.13.0+cu126、
+Transformers 5.15.0、PEFT 0.20.0、Datasets 4.8.5、FastAPI 0.141.1、Uvicorn 0.52.3、
+Ruff 和 Mypy，已满足 `pyproject.toml` 的版本约束。
 
 结果如下：
 
@@ -87,5 +84,5 @@ docker build -t minigpt-service:local .
 | `/generate` | HTTP 200，`ROMEO:` 生成成功 |
 | Docker daemon | 待启动；Docker CLI 可用但 `com.docker.service` 当前为 Stopped |
 
-阶段八的代码和环境验收已具备进入下一阶段的条件；Docker 镜像构建需在启动 Docker
+阶段八的代码和环境验收已具备进入下一阶段的条件；Docker 镜像构建仍需在启动 Docker
 Desktop/daemon 后补做。

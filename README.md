@@ -32,6 +32,7 @@ Tiny Shakespeare 正式基线固定 818,432 个参数、seed 42、2,000 步和 4
 - [阶段七工程化验收](docs/stage7_completion.md)
 - [Container 启动说明](docs/container.md)
 - [阶段八模型服务化验收](docs/stage8_completion.md)
+- [阶段一真实聊天后端验收](docs/stage1_chat_backend.md)
 
 ## 项目能力
 
@@ -43,6 +44,7 @@ Tiny Shakespeare 正式基线固定 818,432 个参数、seed 42、2,000 步和 4
 - Greedy、Temperature、Top-k、Top-p、固定 seed 和滑动上下文生成
 - KV Cache、缓存一致性测试、速度/显存基准入口和 Attention 可视化
 - Hugging Face 聊天模板、response-only labels、动态 Padding、PEFT LoRA
+- 统一 `ChatModel` 接口、真实 Instruct 模型/LoRA 推理与 `POST /chat`
 - 配置快照、软硬件环境、Git 状态、JSONL 指标、日志和原子 Checkpoint
 - uv 锁文件、Ruff、mypy、pytest、分支覆盖率和 GitHub Actions
 
@@ -190,16 +192,17 @@ pyproject.toml / uv.lock  环境、工具配置与依赖锁
 6. Hugging Face SFT 与 PEFT LoRA
 7. 工程化、CI、实验追踪与真实单变量实验
 8. FastAPI 模型服务、容器启动与基础负载测试
+9. Hugging Face 聊天后端、LoRA 恢复与 `/chat` 接口
 
-详细路线见 [docs/learning_plan.md](docs/learning_plan.md)。下一阶段进入 RAG 与 Agent；
-先掌握底层接口和检索机制，再考虑 LangChain 等编排框架。
+详细路线见 [docs/learning_plan.md](docs/learning_plan.md)。下一阶段进入工具调用与 RAG；
+再加入记忆和 Agent 编排。
 
 ## 当前限制
 
 - 字符级模型和 409.6 万 Token 预算只能学习局部文本结构，不具备通用语言理解能力。
 - 没有 EOS Token，生成由 `max_new_tokens` 停止。
 - KV Cache 第一版不支持超过 `block_size` 后直接滑动，需要重新 Prefill。
-- 服务层已提供基础 HTTP 在线推理入口；完整模型服务验收仍需要可用的 Python 3.11
-  PyTorch 环境、Tokenizer 和 Checkpoint。
+- 服务层已提供手写 MiniGPT 的 `/generate` 和 Hugging Face Instruct 模型的 `/chat`；
+  还没有工具调用、RAG、长期记忆或流式输出。
 - 没有 Flash Attention、量化或分布式训练。
 - Windows CUDA 环境缺少兼容 Triton，当前 `torch.compile` 无法形成有效基准。
