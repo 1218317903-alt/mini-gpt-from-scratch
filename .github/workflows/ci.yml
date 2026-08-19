@@ -38,7 +38,7 @@ jobs:
           cache-dependency-glob: uv.lock
 
       - name: Install locked dependencies
-        run: uv sync --locked --extra dev --extra hf --extra viz
+        run: uv sync --locked --extra dev --extra hf --extra service --extra viz
 
       - name: Verify environment
         run: uv run python -c "import sys, torch; print(sys.version); print(torch.__version__)"

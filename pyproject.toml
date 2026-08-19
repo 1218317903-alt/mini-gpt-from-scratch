@@ -24,6 +24,10 @@ hf = [
     "safetensors>=0.5,<1",
     "transformers>=4.49,<6",
 ]
+service = [
+    "fastapi>=0.116,<1",
+    "uvicorn[standard]>=0.35,<1",
+]
 viz = ["matplotlib>=3.9,<4"]
 
 [build-system]

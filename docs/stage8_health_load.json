@@ -1,0 +1,22 @@
+{
+  "concurrency": 8,
+  "elapsed_s": 0.397248,
+  "errors": {},
+  "failures": 0,
+  "latency_ms": {
+    "max": 233.098,
+    "min": 1.808,
+    "p50": 8.532,
+    "p95": 222.233,
+    "p99": 231.815
+  },
+  "requests": 100,
+  "status_counts": {
+    "200": 100
+  },
+  "success_rate": 1.0,
+  "successes": 100,
+  "throughput_rps": 251.732,
+  "timeout_s": 5.0,
+  "url": "http://127.0.0.1:8765/health"
+}

@@ -30,6 +30,8 @@ Tiny Shakespeare 正式基线固定 818,432 个参数、seed 42、2,000 步和 4
 - [FP32 / FP16 / BF16 对照](docs/mixed_precision_comparison.md)
 - [固定 LR / Warmup / Cosine 对照](docs/learning_rate_schedule_comparison.md)
 - [阶段七工程化验收](docs/stage7_completion.md)
+- [Container 启动说明](docs/container.md)
+- [阶段八模型服务化验收](docs/stage8_completion.md)
 
 ## 项目能力
 
@@ -187,14 +189,17 @@ pyproject.toml / uv.lock  环境、工具配置与依赖锁
 5. 分析、KV Cache 与训练优化
 6. Hugging Face SFT 与 PEFT LoRA
 7. 工程化、CI、实验追踪与真实单变量实验
+8. FastAPI 模型服务、容器启动与基础负载测试
 
-详细路线见 [docs/learning_plan.md](docs/learning_plan.md)。下一阶段是模型服务化，然后再
-进入 RAG 与 Agent；先掌握底层接口和检索机制，再考虑 LangChain 等编排框架。
+详细路线见 [docs/learning_plan.md](docs/learning_plan.md)。下一阶段进入 RAG 与 Agent；
+先掌握底层接口和检索机制，再考虑 LangChain 等编排框架。
 
 ## 当前限制
 
 - 字符级模型和 409.6 万 Token 预算只能学习局部文本结构，不具备通用语言理解能力。
 - 没有 EOS Token，生成由 `max_new_tokens` 停止。
 - KV Cache 第一版不支持超过 `block_size` 后直接滑动，需要重新 Prefill。
-- 没有 Flash Attention、量化、分布式训练或在线推理服务。
+- 服务层已提供基础 HTTP 在线推理入口；完整模型服务验收仍需要可用的 Python 3.11
+  PyTorch 环境、Tokenizer 和 Checkpoint。
+- 没有 Flash Attention、量化或分布式训练。
 - Windows CUDA 环境缺少兼容 Triton，当前 `torch.compile` 无法形成有效基准。
