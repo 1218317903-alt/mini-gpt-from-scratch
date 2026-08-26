@@ -1,0 +1,53 @@
+{
+  "date": "2026-08-26",
+  "method": "DPO smoke",
+  "model": "Qwen2.5-0.5B-Instruct",
+  "hardware": "NVIDIA GeForce RTX 4060 Laptop GPU 8GB",
+  "recipe": {
+    "base_quantization": "4bit NF4",
+    "compute_dtype": "bfloat16",
+    "lora_rank": 4,
+    "lora_targets": ["q_proj", "v_proj"],
+    "max_length": 128,
+    "optimizer_steps": 2,
+    "micro_batch_size": 1,
+    "gradient_accumulation_steps": 1,
+    "beta": 0.1
+  },
+  "parameter_summary": {
+    "total": 315389824,
+    "trainable": 270336,
+    "trainable_percentage": 0.08571487709127863
+  },
+  "peak_allocated_mib": 1850.54931640625,
+  "validation_before": {
+    "loss": 0.6935996115207672,
+    "preference_accuracy": 0.25,
+    "reward_margin": -0.00008735712617635727,
+    "examples": 4
+  },
+  "validation_after": {
+    "loss": 0.6943179965019226,
+    "preference_accuracy": 0.5,
+    "reward_margin": -0.0006742510013282299,
+    "examples": 4
+  },
+  "result": {
+    "optimizer_updated_every_step": true,
+    "finite_gradient_norms": true,
+    "loss": [0.6614726781845093, 0.6875564455986023],
+    "preference_accuracy": [1.0, 1.0],
+    "reward_margin": [0.06438522785902023, 0.011212920770049095]
+  },
+  "failed_attempt_learning": {
+    "float16_gradient_was_finite": false,
+    "action": "Switched compute dtype to bfloat16 and added a non-finite gradient hard gate."
+  },
+  "claim_boundary": [
+    "Proves the local 4-bit LoRA DPO training path can update parameters.",
+    "Two optimizer steps do not prove a quality improvement.",
+    "The validation loss increased slightly and the reward margin remained negative, so this smoke run does not establish alignment quality.",
+    "The teaching preference dataset is not a production alignment dataset.",
+    "A formal run must initialize policy/reference from an SFT adapter and run frozen regression evaluation."
+  ]
+}

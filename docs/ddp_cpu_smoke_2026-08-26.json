@@ -1,0 +1,22 @@
+{
+  "date": "2026-08-26",
+  "backend": "gloo",
+  "device": "cpu",
+  "world_size": 2,
+  "hardware_context": {
+    "gpu": "NVIDIA GeForce RTX 4060 Laptop GPU",
+    "gpu_count": 1,
+    "gpu_memory_mib": 8187
+  },
+  "result": {
+    "gradient_synchronized": true,
+    "parameters_equal_after_step": true,
+    "maximum_gradient_difference_across_ranks": 0.0,
+    "maximum_parameter_difference_across_ranks": 0.0
+  },
+  "claim_boundary": [
+    "Validates DDP process and gradient synchronization semantics.",
+    "Does not validate multi-GPU speedup or NCCL performance.",
+    "Does not validate FSDP memory savings."
+  ]
+}

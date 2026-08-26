@@ -47,6 +47,10 @@ Tiny Shakespeare 正式基线固定 818,432 个参数、seed 42、2,000 步和 4
 - [P0–P10 整体闭环审计](docs/p0_p10_closed_loop.md)
 - [3B QLoRA 训练与重载验收说明](docs/p4_3b_qlora_training_summary.md)
 - [冻结测试集人工审核表](docs/frozen_eval_review_checklist.md)
+- [后训练课程：从 SFT 到 DPO](docs/post_training_course.md)
+- [分布式训练课程：DDP、FSDP 与硬件边界](docs/distributed_training_course.md)
+- [0.5B DPO 真实 smoke 证据](docs/dpo_smoke_2026-08-26.json)
+- [CPU/Gloo 双进程 DDP smoke 证据](docs/ddp_cpu_smoke_2026-08-26.json)
 
 ### P0–P5 纯文本 Agent 冻结结果
 
@@ -106,6 +110,8 @@ Adapter 激活控制面。可选成人模板默认关闭，且没有下载相关
 - Greedy、Temperature、Top-k、Top-p、固定 seed 和滑动上下文生成
 - KV Cache、缓存一致性测试、速度/显存基准入口和 Attention 可视化
 - Hugging Face 聊天模板、response-only labels、动态 Padding、PEFT LoRA
+- chosen/rejected 偏好数据、reference-relative DPO、训练前后验证与 4-bit LoRA
+- torchrun 环境解析、全局 Batch 推导、数据分片与 CPU/Gloo 双进程 DDP 教学 smoke
 - 多轮 Agent SFT、全 assistant turn 监督、NF4 QLoRA 与训练污染检查
 - 统一 `ChatModel` 接口：MiniGPT、原始 HF 模型和 LoRA Adapter 走同一套 `/chat`
 - 三个安全工具、参数校验、超时/确认/重复调用保护、脱敏追踪与 `POST /agent/chat`
@@ -291,6 +297,40 @@ Causal LM 展示：
 - Adapter 保存、全新基座恢复与保存前后 logits 一致性
 - 固定 Prompt 的训练前、训练后、重新加载后对比
 
+## 后训练与分布式训练教学
+
+项目现在包含可运行的 DPO 教学闭环，以及严格区分“本机实测”和“仅教学”的分布式模块：
+
+- RTX 4060 Laptop 8GB 已真实完成 Qwen2.5-0.5B-Instruct、4-bit NF4、BF16、LoRA DPO
+  两步 smoke；两次优化器均更新，峰值已分配显存约 1850.55 MiB。
+- smoke 的验证 Loss 从 0.69360 变为 0.69432，不能据此声称质量提升；正式实验应从 SFT
+  Adapter 初始化，并使用冻结回归集和人工审核。
+- 当前机器只有 1 张 GPU，未实测 GPU DDP、NCCL 吞吐或 FSDP 显存收益。
+- CPU/Gloo 双进程 smoke 已验证不同 rank 的梯度同步及更新后参数一致，只用于学习 DDP
+  语义，不代表多 GPU 加速结果。
+
+先检查当前机器能安全运行哪些训练路径：
+
+```powershell
+uv run python scripts/check_training_capabilities.py
+```
+
+运行本机可承受的 DPO smoke：
+
+```powershell
+uv run python hf_lora/scripts/train_dpo.py `
+  --config hf_lora/configs/qwen2_5_0_5b_dpo_smoke.yaml
+```
+
+运行无需多张 GPU 的 DDP 语义验证：
+
+```powershell
+uv run python scripts/run_ddp_cpu_smoke.py
+```
+
+原理、公式、易错点和自测题见[后训练课程](docs/post_training_course.md)与
+[分布式训练课程](docs/distributed_training_course.md)。
+
 ## 目录结构
 
 ```text
@@ -329,6 +369,7 @@ pyproject.toml / uv.lock  环境、工具配置与依赖锁
 14. P8 现代架构开关、BPE/packing 与受控短预算基准
 15. P9 受控 OCR/ASR/TTS 多模态级联与真实本地 smoke
 16. P10 私有领域治理、授权与请求级 PEFT Adapter 隔离
+17. DPO 后训练闭环、硬件能力门禁与 CPU/Gloo 分布式教学 smoke
 
 详细路线见 [docs/learning_plan.md](docs/learning_plan.md)。P0–P10 已完成一次端到端研究工程
 闭环；其中 P6 的模型效果、P8 的长训练、P9 的真实复杂场景和 P10 的领域训练均保留为条件
@@ -356,7 +397,8 @@ D 盘，合计硬上限 40GB。
   会话 API 已提供逐 Token streaming；Agent SSE 仍是阶段级事件。
 - SQLite 会话、自动摘要压缩与生成步取消已经可用，但还没有用户鉴权、长期偏好记忆、
   Prometheus 持久指标或跨进程 trace 聚合。
-- 已支持 4-bit QLoRA，但没有 Flash Attention 或分布式训练。
+- 已支持 4-bit QLoRA 和 0.5B 4-bit LoRA DPO；分布式目前只有 CPU/Gloo 教学 smoke，
+  尚未在多 GPU 上实测 DDP/NCCL、FSDP 或性能扩展效率，也没有 Flash Attention。
 - P0–P5 冻结测试中 multi-step 与 recovery 均为 0%，参数准确率 57.53%；P6 只在 dev 做
   可靠性回归，没有重跑 frozen，因此尚不适合生产使用。
 - P7 支持结构化报告，不支持任意 Office 模板编辑或修订批注；P9 OCR 也不等于扫描版
