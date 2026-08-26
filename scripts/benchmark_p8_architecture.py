@@ -27,6 +27,8 @@ class Variant:
     activation: str = "gelu"
     attention_backend: str = "manual"
     qkv_projection: str = "separate"
+    qk_norm: bool = False
+    num_kv_heads: int | None = None
 
 
 VARIANTS = (
@@ -36,6 +38,8 @@ VARIANTS = (
     Variant("swiglu_only", activation="swiglu"),
     Variant("sdpa_only", attention_backend="sdpa"),
     Variant("fused_qkv_only", qkv_projection="fused"),
+    Variant("qk_norm_only", qk_norm=True),
+    Variant("gqa_only", num_kv_heads=2),
     Variant(
         "modern_combined",
         position_encoding="rope",
@@ -43,6 +47,16 @@ VARIANTS = (
         activation="swiglu",
         attention_backend="sdpa",
         qkv_projection="fused",
+    ),
+    Variant(
+        "modern_qk_gqa",
+        position_encoding="rope",
+        norm="rmsnorm",
+        activation="swiglu",
+        attention_backend="sdpa",
+        qkv_projection="fused",
+        qk_norm=True,
+        num_kv_heads=2,
     ),
 )
 
@@ -112,6 +126,8 @@ def run_variant(
         activation=variant.activation,
         attention_backend=variant.attention_backend,
         qkv_projection=variant.qkv_projection,
+        qk_norm=variant.qk_norm,
+        num_kv_heads=variant.num_kv_heads,
     ).to(device)
     optimizer = torch.optim.AdamW(model.parameters(), lr=3e-4, weight_decay=0.01)
     x_train, y_train = train_batch

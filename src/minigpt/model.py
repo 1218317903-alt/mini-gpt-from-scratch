@@ -187,6 +187,8 @@ class TransformerBlock(nn.Module):
         activation: str = "gelu",
         attention_backend: str = "manual",
         qkv_projection: str = "separate",
+        qk_norm: bool = False,
+        num_kv_heads: int | None = None,
     ) -> None:
         super().__init__()
         self.layer_norm_1 = _build_norm(norm, embedding_dim)
@@ -198,6 +200,8 @@ class TransformerBlock(nn.Module):
             attention_backend=attention_backend,
             qkv_projection=qkv_projection,
             position_encoding=position_encoding,
+            qk_norm=qk_norm,
+            num_kv_heads=num_kv_heads,
         )
         self.layer_norm_2 = _build_norm(norm, embedding_dim)
         self.feed_forward = FeedForward(
@@ -305,6 +309,8 @@ class MiniGPT(nn.Module):
         activation: str = "gelu",
         attention_backend: str = "manual",
         qkv_projection: str = "separate",
+        qk_norm: bool = False,
+        num_kv_heads: int | None = None,
     ) -> None:
         super().__init__()
 
@@ -320,6 +326,13 @@ class MiniGPT(nn.Module):
             raise ValueError("模型整数配置必须全部是正整数。")
         if embedding_dim % num_heads != 0:
             raise ValueError("embedding_dim 必须能被 num_heads 整除。")
+        num_kv_heads = num_heads if num_kv_heads is None else num_kv_heads
+        if type(num_kv_heads) is not int or num_kv_heads <= 0:
+            raise ValueError("num_kv_heads 必须是正整数。")
+        if num_heads % num_kv_heads != 0:
+            raise ValueError("num_heads 必须能被 num_kv_heads 整除。")
+        if type(qk_norm) is not bool:
+            raise ValueError("qk_norm 必须是布尔值。")
         if not isinstance(dropout, (int, float)) or isinstance(dropout, bool):
             raise TypeError("dropout 必须是数字。")
         if not 0.0 <= float(dropout) < 1.0:
@@ -347,6 +360,8 @@ class MiniGPT(nn.Module):
         self.activation_name = activation
         self.attention_backend = attention_backend
         self.qkv_projection_name = qkv_projection
+        self.qk_norm = qk_norm
+        self.num_kv_heads = num_kv_heads
 
         self.token_embedding = TokenEmbedding(
             vocab_size,
@@ -370,6 +385,8 @@ class MiniGPT(nn.Module):
                     activation=activation,
                     attention_backend=attention_backend,
                     qkv_projection=qkv_projection,
+                    qk_norm=qk_norm,
+                    num_kv_heads=num_kv_heads,
                 )
                 for _ in range(num_layers)
             ]

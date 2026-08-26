@@ -56,16 +56,20 @@ def merge_heads(hidden_states: torch.Tensor) -> torch.Tensor:
 class QKVProjection(nn.Module):
     """使用三个独立 Linear 生成 Q、K、V。"""
 
-    def __init__(self, embedding_dim: int) -> None:
+    def __init__(self, embedding_dim: int, kv_dim: int | None = None) -> None:
         super().__init__()
 
         if type(embedding_dim) is not int or embedding_dim <= 0:
             raise ValueError("embedding_dim 必须是正整数。")
 
+        kv_dim = embedding_dim if kv_dim is None else kv_dim
+        if type(kv_dim) is not int or kv_dim <= 0:
+            raise ValueError("kv_dim 必须是正整数。")
         self.embedding_dim = embedding_dim
+        self.kv_dim = kv_dim
         self.q_proj = nn.Linear(embedding_dim, embedding_dim)
-        self.k_proj = nn.Linear(embedding_dim, embedding_dim)
-        self.v_proj = nn.Linear(embedding_dim, embedding_dim)
+        self.k_proj = nn.Linear(embedding_dim, kv_dim)
+        self.v_proj = nn.Linear(embedding_dim, kv_dim)
 
     def forward(
         self,
@@ -86,12 +90,16 @@ class QKVProjection(nn.Module):
 class FusedQKVProjection(nn.Module):
     """用一次 Linear 生成 Q/K/V，再沿最后一维切分。"""
 
-    def __init__(self, embedding_dim: int) -> None:
+    def __init__(self, embedding_dim: int, kv_dim: int | None = None) -> None:
         super().__init__()
         if type(embedding_dim) is not int or embedding_dim <= 0:
             raise ValueError("embedding_dim 必须是正整数。")
+        kv_dim = embedding_dim if kv_dim is None else kv_dim
+        if type(kv_dim) is not int or kv_dim <= 0:
+            raise ValueError("kv_dim 必须是正整数。")
         self.embedding_dim = embedding_dim
-        self.qkv_proj = nn.Linear(embedding_dim, 3 * embedding_dim)
+        self.kv_dim = kv_dim
+        self.qkv_proj = nn.Linear(embedding_dim, embedding_dim + 2 * kv_dim)
 
     def forward(
         self,
@@ -101,7 +109,41 @@ class FusedQKVProjection(nn.Module):
             raise ValueError("hidden_states 必须是 [B,T,C]。")
         if hidden_states.size(-1) != self.embedding_dim:
             raise ValueError("输入最后一维必须等于 embedding_dim。")
-        return self.qkv_proj(hidden_states).chunk(3, dim=-1)
+        return self.qkv_proj(hidden_states).split(
+            (self.embedding_dim, self.kv_dim, self.kv_dim),
+            dim=-1,
+        )
+
+
+def rms_normalize_heads(
+    hidden_states: torch.Tensor,
+    epsilon: float = 1e-6,
+) -> torch.Tensor:
+    """Apply parameter-free RMS normalization along each Head dimension."""
+    if hidden_states.ndim != 4:
+        raise ValueError("hidden_states 必须是 [B,H,T,D]。")
+    if epsilon <= 0:
+        raise ValueError("epsilon 必须大于 0。")
+    variance = hidden_states.float().pow(2).mean(dim=-1, keepdim=True)
+    return hidden_states * torch.rsqrt(variance + epsilon).to(hidden_states.dtype)
+
+
+def repeat_kv_heads(
+    hidden_states: torch.Tensor,
+    num_query_heads: int,
+) -> torch.Tensor:
+    """Expand compact GQA K/V Heads for the manual attention path."""
+    if hidden_states.ndim != 4:
+        raise ValueError("hidden_states 必须是 [B,H,T,D]。")
+    if type(num_query_heads) is not int or num_query_heads <= 0:
+        raise ValueError("num_query_heads 必须是正整数。")
+    num_kv_heads = hidden_states.size(1)
+    if num_query_heads % num_kv_heads != 0:
+        raise ValueError("Query Head 数必须能被 KV Head 数整除。")
+    repeats = num_query_heads // num_kv_heads
+    if repeats == 1:
+        return hidden_states
+    return hidden_states.repeat_interleave(repeats, dim=1)
 
 
 def apply_rotary_position_embedding(
@@ -112,8 +154,10 @@ def apply_rotary_position_embedding(
     base: float = 10_000.0,
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """对当前 ``[B,H,T,D]`` Q/K 应用 RoPE，支持 KV Cache 偏移。"""
-    if query.shape != key.shape or query.ndim != 4:
-        raise ValueError("query 和 key 必须是相同形状的 [B,H,T,D]。")
+    if query.ndim != 4 or key.ndim != 4:
+        raise ValueError("query 和 key 必须是 [B,H,T,D]。")
+    if query.shape[0] != key.shape[0] or query.shape[2:] != key.shape[2:]:
+        raise ValueError("query 和 key 的 Batch、序列与 Head Dim 必须一致。")
     if query.size(-1) % 2 != 0:
         raise ValueError("RoPE 要求 head_dim 为偶数。")
     if type(position_offset) is not int or position_offset < 0:
@@ -226,6 +270,8 @@ class MultiHeadCausalSelfAttention(nn.Module):
         attention_backend: str = "manual",
         qkv_projection: str = "separate",
         position_encoding: str = "learned",
+        qk_norm: bool = False,
+        num_kv_heads: int | None = None,
     ) -> None:
         super().__init__()
 
@@ -237,6 +283,13 @@ class MultiHeadCausalSelfAttention(nn.Module):
             raise ValueError("block_size 必须是正整数。")
         if embedding_dim % num_heads != 0:
             raise ValueError("embedding_dim 必须能被 num_heads 整除。")
+        num_kv_heads = num_heads if num_kv_heads is None else num_kv_heads
+        if type(num_kv_heads) is not int or num_kv_heads <= 0:
+            raise ValueError("num_kv_heads 必须是正整数。")
+        if num_heads % num_kv_heads != 0:
+            raise ValueError("num_heads 必须能被 num_kv_heads 整除。")
+        if type(qk_norm) is not bool:
+            raise ValueError("qk_norm 必须是布尔值。")
         if not isinstance(dropout, (int, float)) or isinstance(dropout, bool):
             raise TypeError("dropout 必须是数字。")
         if not 0.0 <= float(dropout) < 1.0:
@@ -252,17 +305,20 @@ class MultiHeadCausalSelfAttention(nn.Module):
 
         self.embedding_dim = embedding_dim
         self.num_heads = num_heads
+        self.num_kv_heads = num_kv_heads
         self.block_size = block_size
         self.head_dim = embedding_dim // num_heads
         self.dropout_probability = float(dropout)
         self.attention_backend = attention_backend
         self.position_encoding = position_encoding
+        self.qk_norm = qk_norm
 
         self.qkv_projection: QKVProjection | FusedQKVProjection
+        kv_dim = self.num_kv_heads * self.head_dim
         if qkv_projection == "fused":
-            self.qkv_projection = FusedQKVProjection(embedding_dim)
+            self.qkv_projection = FusedQKVProjection(embedding_dim, kv_dim)
         else:
-            self.qkv_projection = QKVProjection(embedding_dim)
+            self.qkv_projection = QKVProjection(embedding_dim, kv_dim)
         self.out_proj = nn.Linear(embedding_dim, embedding_dim)
         self.output_dropout = nn.Dropout(self.dropout_probability)
 
@@ -290,15 +346,19 @@ class MultiHeadCausalSelfAttention(nn.Module):
 
         query, key, value = self.qkv_projection(hidden_states)
         query = split_heads(query, self.num_heads)
-        key = split_heads(key, self.num_heads)
-        value = split_heads(value, self.num_heads)
+        key = split_heads(key, self.num_kv_heads)
+        value = split_heads(value, self.num_kv_heads)
+
+        if self.qk_norm:
+            query = rms_normalize_heads(query)
+            key = rms_normalize_heads(key)
 
         past_length = 0
         if past_key_value is not None:
             past_key, past_value = past_key_value
             expected_prefix = (
                 hidden_states.size(0),
-                self.num_heads,
+                self.num_kv_heads,
             )
             if past_key.ndim != 4 or past_value.ndim != 4:
                 raise ValueError("缓存的 key/value 必须是 [B,H,S,D]。")
@@ -327,8 +387,14 @@ class MultiHeadCausalSelfAttention(nn.Module):
             value = torch.cat((past_value, value), dim=2)
 
         if self.attention_backend == "sdpa" and not output_attentions:
+            # PyTorch's native ``enable_gqa`` path currently falls back to a
+            # substantially slower CUDA kernel on common Windows builds.
+            # Expanding only for the attention call keeps the persistent KV
+            # cache compact while allowing optimized SDPA kernel dispatch.
+            attention_key = repeat_kv_heads(key, self.num_heads)
+            attention_value = repeat_kv_heads(value, self.num_heads)
             query_length = query.size(-2)
-            key_length = key.size(-2)
+            key_length = attention_key.size(-2)
             query_positions = (
                 torch.arange(query_length, device=query.device)
                 + key_length
@@ -338,17 +404,19 @@ class MultiHeadCausalSelfAttention(nn.Module):
             causal_mask = key_positions.unsqueeze(0) <= query_positions.unsqueeze(1)
             attention_output = F.scaled_dot_product_attention(
                 query,
-                key,
-                value,
+                attention_key,
+                attention_value,
                 attn_mask=causal_mask,
                 dropout_p=self.dropout_probability if self.training else 0.0,
             )
             attention_weights = None
         else:
+            expanded_key = repeat_kv_heads(key, self.num_heads)
+            expanded_value = repeat_kv_heads(value, self.num_heads)
             attention_output, attention_weights = scaled_dot_product_attention(
                 query,
-                key,
-                value,
+                expanded_key,
+                expanded_value,
                 dropout_probability=self.dropout_probability,
                 training=self.training,
             )
