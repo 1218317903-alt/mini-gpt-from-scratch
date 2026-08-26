@@ -1,0 +1,40 @@
+data:
+  raw_path: data/raw/tiny_shakespeare.txt
+  train_path: data/processed/train.txt
+  val_path: data/processed/val.txt
+  test_path: data/processed/test.txt
+  tokenizer_path: data/processed/tokenizer_bpe_512.json
+  train_ratio: 0.8
+  val_ratio: 0.1
+  tokenizer_type: bpe
+  tokenizer_vocab_size: 512
+  packing: true
+  sample_separator: "\n\n"
+  block_size: 256
+  batch_size: 16
+
+model:
+  embedding_dim: 384
+  num_heads: 6
+  num_kv_heads: 2
+  num_layers: 6
+  expansion_factor: 4
+  tie_weights: true
+  position_encoding: rope
+  norm: rmsnorm
+  activation: swiglu
+  attention_backend: sdpa
+  qkv_projection: fused
+  qk_norm: true
+
+training:
+  learning_rate: 0.0003
+  weight_decay: 0.1
+  max_steps: 5000
+  grad_clip_norm: 1.0
+  log_interval: 20
+  eval_interval: 250
+  eval_steps: 50
+  save_interval: 500
+  seed: 42
+  overfit_steps: 50

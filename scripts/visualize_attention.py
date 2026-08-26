@@ -104,6 +104,8 @@ def main() -> None:
         activation=model_config.activation,
         attention_backend=model_config.attention_backend,
         qkv_projection=model_config.qkv_projection,
+        qk_norm=model_config.qk_norm,
+        num_kv_heads=model_config.num_kv_heads,
     )
     model = model.to(device)
     load_checkpoint(

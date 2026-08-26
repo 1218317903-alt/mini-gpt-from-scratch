@@ -7,7 +7,7 @@ from pathlib import Path
 
 from minigpt.config import load_data_config, load_model_config
 from minigpt.model import MiniGPT, count_parameters, count_parameters_by_group
-from minigpt.tokenizer import CharacterTokenizer
+from minigpt.tokenizer import load_tokenizer
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
@@ -39,6 +39,7 @@ def parse_args() -> argparse.Namespace:
 
 def resolve_vocab_size(
     tokenizer_path: Path,
+    tokenizer_type: str,
     override: int | None,
 ) -> int:
     if override is not None:
@@ -49,7 +50,7 @@ def resolve_vocab_size(
         raise FileNotFoundError(
             "Tokenizer 尚未生成；请先准备数据，或传入 --vocab-size。"
         )
-    return CharacterTokenizer.load(tokenizer_path).vocab_size
+    return load_tokenizer(tokenizer_path, tokenizer_type=tokenizer_type).vocab_size
 
 
 def main() -> None:
@@ -59,6 +60,7 @@ def main() -> None:
 
     vocab_size = resolve_vocab_size(
         data_config.tokenizer_path,
+        data_config.tokenizer_type,
         args.vocab_size,
     )
     embedding_dim = args.embedding_dim or model_config.embedding_dim
@@ -82,6 +84,8 @@ def main() -> None:
         activation=model_config.activation,
         attention_backend=model_config.attention_backend,
         qkv_projection=model_config.qkv_projection,
+        qk_norm=model_config.qk_norm,
+        num_kv_heads=model_config.num_kv_heads,
     )
     groups = count_parameters_by_group(model)
     total = count_parameters(model)

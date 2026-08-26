@@ -10,7 +10,7 @@ import torch
 from minigpt.config import DataConfig, ModelConfig, load_data_config, load_model_config
 from minigpt.generation import generate
 from minigpt.model import MiniGPT
-from minigpt.tokenizer import CharacterTokenizer
+from minigpt.tokenizer import ProjectTokenizer, decode_token_ids, load_tokenizer
 from minigpt.utils import (
     checkpoint_config_value,
     compile_model,
@@ -49,7 +49,7 @@ class ModelService:
         self.device = select_device(config.device)
         self.data_config: DataConfig | None = None
         self.model_config: ModelConfig | None = None
-        self.tokenizer: CharacterTokenizer | None = None
+        self.tokenizer: ProjectTokenizer | None = None
         self.model: torch.nn.Module | None = None
         self.block_size: int | None = None
         self.checkpoint: dict[str, Any] | None = None
@@ -67,7 +67,10 @@ class ModelService:
 
         data_config = load_data_config(self.config.config_path)
         model_config = load_model_config(self.config.config_path)
-        tokenizer = CharacterTokenizer.load(data_config.tokenizer_path)
+        tokenizer = load_tokenizer(
+            data_config.tokenizer_path,
+            tokenizer_type=data_config.tokenizer_type,
+        )
         checkpoint = load_checkpoint_payload(self.config.checkpoint_path, self.device)
         self._validate_checkpoint_tokenizer(checkpoint, tokenizer)
 
@@ -108,7 +111,7 @@ class ModelService:
     @staticmethod
     def _validate_checkpoint_tokenizer(
         checkpoint: dict[str, Any],
-        tokenizer: CharacterTokenizer,
+        tokenizer: ProjectTokenizer,
     ) -> None:
         saved_info = checkpoint.get("tokenizer_info")
         if saved_info is None:
@@ -122,7 +125,7 @@ class ModelService:
 
     @staticmethod
     def _build_model(
-        tokenizer: CharacterTokenizer,
+        tokenizer: ProjectTokenizer,
         data_config: DataConfig,
         model_config: ModelConfig,
         checkpoint: dict[str, Any],
@@ -174,6 +177,15 @@ class ModelService:
                 "qkv_projection",
                 model_config.qkv_projection,
             ),
+            qk_norm=checkpoint_config_value(
+                checkpoint, "model", "qk_norm", model_config.qk_norm
+            ),
+            num_kv_heads=checkpoint_config_value(
+                checkpoint,
+                "model",
+                "num_kv_heads",
+                model_config.num_kv_heads,
+            ),
         )
 
     @torch.inference_mode()
@@ -211,5 +223,6 @@ class ModelService:
                 top_p=top_p,
                 use_kv_cache=use_kv_cache,
                 generator=generator,
+                eos_token_id=getattr(self.tokenizer, "eos_id", None),
             )
-        return self.tokenizer.decode(generated_ids[0].cpu().tolist())
+        return decode_token_ids(self.tokenizer, generated_ids[0].cpu().tolist())

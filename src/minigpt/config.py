@@ -23,6 +23,10 @@ class DataConfig:
 
     block_size: int
     batch_size: int
+    tokenizer_type: str = "character"
+    tokenizer_vocab_size: int | None = None
+    packing: bool = False
+    sample_separator: str = "\n\n"
 
 
 @dataclass(frozen=True)
@@ -39,6 +43,8 @@ class ModelConfig:
     activation: str = "gelu"
     attention_backend: str = "manual"
     qkv_projection: str = "separate"
+    qk_norm: bool = False
+    num_kv_heads: int | None = None
 
 
 @dataclass(frozen=True)
@@ -86,6 +92,10 @@ def load_data_config(path: Path) -> DataConfig:
     val_ratio = data_config.get("val_ratio")
     block_size = data_config.get("block_size")
     batch_size = data_config.get("batch_size")
+    tokenizer_type = data_config.get("tokenizer_type", "character")
+    tokenizer_vocab_size = data_config.get("tokenizer_vocab_size")
+    packing = data_config.get("packing", False)
+    sample_separator = data_config.get("sample_separator", "\n\n")
 
     if not isinstance(train_ratio, (int, float)):
         raise ValueError("train_ratio 必须是数字。")
@@ -98,6 +108,21 @@ def load_data_config(path: Path) -> DataConfig:
 
     if not isinstance(batch_size, int):
         raise ValueError("batch_size 必须是整数。")
+
+    if tokenizer_type not in {"character", "bpe"}:
+        raise ValueError("tokenizer_type 必须是 character 或 bpe。")
+    if tokenizer_vocab_size is not None and (
+        type(tokenizer_vocab_size) is not int or tokenizer_vocab_size <= 0
+    ):
+        raise ValueError("tokenizer_vocab_size 必须是正整数或 null。")
+    if tokenizer_type == "bpe" and tokenizer_vocab_size is None:
+        raise ValueError("BPE 配置必须提供 tokenizer_vocab_size。")
+    if type(packing) is not bool:
+        raise ValueError("packing 必须是布尔值。")
+    if packing and tokenizer_type != "bpe":
+        raise ValueError("packing 当前只支持带 EOS/PAD 的 BPE Tokenizer。")
+    if not isinstance(sample_separator, str) or not sample_separator:
+        raise ValueError("sample_separator 必须是非空字符串。")
 
     if train_ratio <= 0:
         raise ValueError("train_ratio 必须大于 0。")
@@ -124,6 +149,10 @@ def load_data_config(path: Path) -> DataConfig:
         val_ratio=float(val_ratio),
         block_size=block_size,
         batch_size=batch_size,
+        tokenizer_type=tokenizer_type,
+        tokenizer_vocab_size=tokenizer_vocab_size,
+        packing=packing,
+        sample_separator=sample_separator,
     )
 
 
@@ -159,6 +188,15 @@ def load_model_config(path: Path) -> ModelConfig:
 
     if values["embedding_dim"] % values["num_heads"] != 0:
         raise ValueError("embedding_dim 必须能被 num_heads 整除。")
+
+    qk_norm = model.get("qk_norm", False)
+    if type(qk_norm) is not bool:
+        raise ValueError("qk_norm 必须是布尔值。")
+    num_kv_heads = model.get("num_kv_heads", values["num_heads"])
+    if type(num_kv_heads) is not int or num_kv_heads <= 0:
+        raise ValueError("num_kv_heads 必须是正整数。")
+    if values["num_heads"] % num_kv_heads != 0:
+        raise ValueError("num_heads 必须能被 num_kv_heads 整除。")
 
     string_choices = {
         "position_encoding": {"learned", "rope"},
@@ -199,6 +237,8 @@ def load_model_config(path: Path) -> ModelConfig:
         activation=selected["activation"],
         attention_backend=selected["attention_backend"],
         qkv_projection=selected["qkv_projection"],
+        qk_norm=qk_norm,
+        num_kv_heads=num_kv_heads,
     )
 
 

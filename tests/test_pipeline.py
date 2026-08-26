@@ -45,6 +45,23 @@ def test_project_config_loads_all_stage_three_fields() -> None:
     assert training_config.save_interval > 0
 
 
+def test_4060_bpe_config_enables_packing() -> None:
+    data_config = load_data_config(Path("configs/tiny_shakespeare_4060_bpe.yaml"))
+
+    assert data_config.tokenizer_type == "bpe"
+    assert data_config.tokenizer_vocab_size == 512
+    assert data_config.packing is True
+
+
+def test_4060_qk_gqa_config_loads_modern_attention() -> None:
+    model_config = load_model_config(
+        Path("configs/tiny_shakespeare_4060_qknorm_gqa.yaml")
+    )
+
+    assert model_config.qk_norm is True
+    assert model_config.num_kv_heads == 2
+
+
 def test_train_step_and_evaluate_loss_are_finite() -> None:
     model = make_tiny_model()
     optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3)

@@ -16,7 +16,7 @@ from minigpt.config import (
 )
 from minigpt.generation import generate
 from minigpt.model import MiniGPT
-from minigpt.tokenizer import CharacterTokenizer
+from minigpt.tokenizer import ProjectTokenizer, decode_token_ids, load_tokenizer
 from minigpt.utils import (
     checkpoint_config_value,
     compile_model,
@@ -141,8 +141,6 @@ def benchmark_generation(
         raise ValueError("benchmark_repeats must be a positive integer.")
     if max_new_tokens <= 0:
         raise ValueError("KV Cache benchmark requires max_new_tokens > 0.")
-    if input_ids.size(1) + max_new_tokens > block_size:
-        raise ValueError("KV Cache benchmark length exceeds block_size.")
 
     results: dict[bool, list[float]] = {False: [], True: []}
     outputs: dict[bool, torch.Tensor] = {}
@@ -203,7 +201,7 @@ def resolve_project_path(path: Path) -> Path:
 
 
 def build_model(
-    tokenizer: CharacterTokenizer,
+    tokenizer: ProjectTokenizer,
     data_config: DataConfig,
     model_config: ModelConfig,
     checkpoint: dict[str, object] | None = None,
@@ -255,12 +253,21 @@ def build_model(
             "qkv_projection",
             model_config.qkv_projection,
         ),
+        qk_norm=checkpoint_config_value(
+            checkpoint, "model", "qk_norm", model_config.qk_norm
+        ),
+        num_kv_heads=checkpoint_config_value(
+            checkpoint,
+            "model",
+            "num_kv_heads",
+            model_config.num_kv_heads,
+        ),
     )
 
 
 def validate_checkpoint_tokenizer(
     checkpoint: dict[str, object],
-    tokenizer: CharacterTokenizer,
+    tokenizer: ProjectTokenizer,
 ) -> None:
     """Ensure that checkpoint and runtime Tokenizer use the same vocabulary."""
     saved_info = checkpoint.get("tokenizer_info")
@@ -283,7 +290,10 @@ def main() -> None:
 
     data_config = load_data_config(config_path)
     model_config = load_model_config(config_path)
-    tokenizer = CharacterTokenizer.load(data_config.tokenizer_path)
+    tokenizer = load_tokenizer(
+        data_config.tokenizer_path,
+        tokenizer_type=data_config.tokenizer_type,
+    )
     device = select_device()
     checkpoint_payload = load_checkpoint_payload(
         checkpoint_path,
@@ -345,9 +355,11 @@ def main() -> None:
         top_k=args.top_k,
         top_p=args.top_p,
         use_kv_cache=args.kv_cache,
+        eos_token_id=getattr(tokenizer, "eos_id", None),
     )
 
-    generated_text = tokenizer.decode(
+    generated_text = decode_token_ids(
+        tokenizer,
         generated_ids[0].detach().cpu().tolist(),
     )
     print(generated_text)

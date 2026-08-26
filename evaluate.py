@@ -11,9 +11,9 @@ from minigpt.config import (
     load_model_config,
     load_training_config,
 )
-from minigpt.dataset import CharacterLanguageModelDataset
+from minigpt.dataset import build_language_model_dataset
 from minigpt.model import MiniGPT
-from minigpt.tokenizer import CharacterTokenizer
+from minigpt.tokenizer import load_tokenizer
 from minigpt.trainer import evaluate_loss
 from minigpt.utils import (
     checkpoint_config_value,
@@ -78,7 +78,10 @@ def main() -> None:
     model_config = load_model_config(config_path)
     training_config = load_training_config(config_path)
 
-    tokenizer = CharacterTokenizer.load(data_config.tokenizer_path)
+    tokenizer = load_tokenizer(
+        data_config.tokenizer_path,
+        tokenizer_type=data_config.tokenizer_type,
+    )
     device = select_device()
     checkpoint_payload = load_checkpoint_payload(
         checkpoint_path,
@@ -103,12 +106,13 @@ def main() -> None:
         text_path = data_config.test_path
 
     text = read_utf8_text(text_path)
-    dataset = CharacterLanguageModelDataset(
-        token_ids=tokenizer.encode(
-            text,
-            allow_unknown=True,
-        ),
+    dataset = build_language_model_dataset(
+        text,
+        tokenizer,
         block_size=block_size,
+        packing=data_config.packing,
+        sample_separator=data_config.sample_separator,
+        allow_unknown=True,
     )
     data_loader = DataLoader(
         dataset,
@@ -173,6 +177,15 @@ def main() -> None:
             "model",
             "qkv_projection",
             model_config.qkv_projection,
+        ),
+        qk_norm=checkpoint_config_value(
+            checkpoint_payload, "model", "qk_norm", model_config.qk_norm
+        ),
+        num_kv_heads=checkpoint_config_value(
+            checkpoint_payload,
+            "model",
+            "num_kv_heads",
+            model_config.num_kv_heads,
         ),
     )
 

@@ -18,7 +18,7 @@ from minigpt.config import (
     load_model_config,
     load_training_config,
 )
-from minigpt.dataset import CharacterLanguageModelDataset
+from minigpt.dataset import build_language_model_dataset
 from minigpt.experiment import (
     LOGGER_NAME,
     ExperimentRun,
@@ -27,7 +27,7 @@ from minigpt.experiment import (
     create_run_id,
 )
 from minigpt.model import MiniGPT, count_parameters
-from minigpt.tokenizer import CharacterTokenizer
+from minigpt.tokenizer import ProjectTokenizer, load_tokenizer
 from minigpt.trainer import (
     create_cuda_grad_scaler,
     evaluate_loss,
@@ -80,6 +80,12 @@ def parse_args() -> argparse.Namespace:
         help="实验记录目录；默认自动创建 runs/<run-id>。",
     )
     parser.add_argument("--dropout", type=float, default=0.0)
+    parser.add_argument(
+        "--max-steps",
+        type=int,
+        default=None,
+        help="可选的训练步数覆盖，适合短程冒烟或受限硬件实验。",
+    )
     parser.add_argument("--embedding-dim", type=int, default=None)
     parser.add_argument("--num-heads", type=int, default=None)
     parser.add_argument("--num-layers", type=int, default=None)
@@ -135,7 +141,7 @@ def select_device() -> torch.device:
 
 
 def build_model(
-    tokenizer: CharacterTokenizer,
+    tokenizer: ProjectTokenizer,
     data_config: DataConfig,
     model_config: ModelConfig,
     dropout: float = 0.0,
@@ -155,6 +161,8 @@ def build_model(
         activation=model_config.activation,
         attention_backend=model_config.attention_backend,
         qkv_projection=model_config.qkv_projection,
+        qk_norm=model_config.qk_norm,
+        num_kv_heads=model_config.num_kv_heads,
     )
 
 
@@ -164,6 +172,7 @@ def apply_runtime_overrides(
     model_config: ModelConfig,
 ) -> tuple[DataConfig, ModelConfig]:
     """应用实验命令行覆盖，不修改原始 YAML 文件。"""
+    original_num_heads = model_config.num_heads
     if args.block_size is not None:
         data_config = replace(data_config, block_size=args.block_size)
     if args.batch_size is not None:
@@ -179,6 +188,11 @@ def apply_runtime_overrides(
         if value is not None
     }
     if model_changes:
+        if (
+            args.num_heads is not None
+            and model_config.num_kv_heads == original_num_heads
+        ):
+            model_changes["num_kv_heads"] = args.num_heads
         model_config = replace(model_config, **model_changes)
 
     positive_values = {
@@ -193,6 +207,16 @@ def apply_runtime_overrides(
         raise ValueError("结构覆盖与梯度累积次数必须是正整数。")
     if model_config.embedding_dim % model_config.num_heads != 0:
         raise ValueError("embedding_dim 必须能被 num_heads 整除。")
+    if (
+        model_config.num_kv_heads is None
+        or model_config.num_heads % model_config.num_kv_heads != 0
+    ):
+        raise ValueError("num_heads 必须能被 num_kv_heads 整除。")
+    if (
+        model_config.position_encoding == "rope"
+        and model_config.embedding_dim // model_config.num_heads % 2 != 0
+    ):
+        raise ValueError("RoPE 要求 head_dim 为偶数。")
     if not 0.0 <= args.dropout < 1.0:
         raise ValueError("dropout 必须位于 [0, 1) 中。")
     return data_config, model_config
@@ -226,7 +250,7 @@ def normalize_config(
 
 
 def build_tokenizer_info(
-    tokenizer: CharacterTokenizer,
+    tokenizer: ProjectTokenizer,
 ) -> dict[str, object]:
     """收集恢复训练所需的 Tokenizer 信息。"""
     return {
@@ -234,11 +258,14 @@ def build_tokenizer_info(
         "itos": tokenizer.itos,
         "unk_token": tokenizer.UNK_TOKEN,
         "unk_id": tokenizer.unk_id,
+        "eos_id": getattr(tokenizer, "eos_id", None),
+        "pad_id": getattr(tokenizer, "pad_id", None),
+        "tokenizer_type": type(tokenizer).__name__,
     }
 
 
 def run_tiny_batch_overfit_test(
-    tokenizer: CharacterTokenizer,
+    tokenizer: ProjectTokenizer,
     data_config: DataConfig,
     model_config: ModelConfig,
     training_config: TrainingConfig,
@@ -311,6 +338,10 @@ def main() -> None:
     data_config = load_data_config(config_path)
     model_config = load_model_config(config_path)
     training_config = load_training_config(config_path)
+    if args.max_steps is not None:
+        if args.max_steps <= 0:
+            raise ValueError("max_steps 覆盖必须是正整数。")
+        training_config = replace(training_config, max_steps=args.max_steps)
     data_config, model_config = apply_runtime_overrides(
         args,
         data_config,
@@ -351,21 +382,28 @@ def main() -> None:
 
     set_random_seed(training_config.seed)
 
-    tokenizer = CharacterTokenizer.load(data_config.tokenizer_path)
+    tokenizer = load_tokenizer(
+        data_config.tokenizer_path,
+        tokenizer_type=data_config.tokenizer_type,
+    )
 
     train_text = read_utf8_text(data_config.train_path)
     val_text = read_utf8_text(data_config.val_path)
 
-    train_dataset = CharacterLanguageModelDataset(
-        token_ids=tokenizer.encode(train_text),
+    train_dataset = build_language_model_dataset(
+        train_text,
+        tokenizer,
         block_size=data_config.block_size,
+        packing=data_config.packing,
+        sample_separator=data_config.sample_separator,
     )
-    val_dataset = CharacterLanguageModelDataset(
-        token_ids=tokenizer.encode(
-            val_text,
-            allow_unknown=True,
-        ),
+    val_dataset = build_language_model_dataset(
+        val_text,
+        tokenizer,
         block_size=data_config.block_size,
+        packing=data_config.packing,
+        sample_separator=data_config.sample_separator,
+        allow_unknown=True,
     )
 
     train_loader = DataLoader(
@@ -488,7 +526,8 @@ def main() -> None:
         f"accumulation_steps={args.gradient_accumulation_steps} "
         f"compiled={args.compile} compile_mode={args.compile_mode} "
         f"effective_batch_size="
-        f"{data_config.batch_size * args.gradient_accumulation_steps}"
+        f"{data_config.batch_size * args.gradient_accumulation_steps} "
+        f"tokenizer={data_config.tokenizer_type} packing={data_config.packing}"
     )
     experiment.record(
         "run_started",
