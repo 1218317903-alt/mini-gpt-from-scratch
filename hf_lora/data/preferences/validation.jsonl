@@ -1,0 +1,4 @@
+{"prompt":[{"role":"user","content":"DDP 和 FSDP 哪一个必然更快？"}],"chosen":"没有必然结论。DDP 结构简单且在模型能放入单卡时常有较好吞吐；FSDP 节省显存但引入参数通信，实际速度取决于模型规模、网络、wrap 策略和 batch。","rejected":"FSDP 必然比 DDP 快，因为分片后每张卡只计算一部分层。"}
+{"prompt":[{"role":"user","content":"DPO 是否需要在线采样和奖励模型？"}],"chosen":"经典离线 DPO 直接使用 prompt、chosen、rejected 偏好对，不需要像 PPO 那样在训练循环中维护显式奖励模型和在线 rollout，但数据质量与参考模型仍然重要。","rejected":"必须。没有在线 rollout 和独立奖励模型就不能计算 DPO。"}
+{"prompt":[{"role":"user","content":"单卡项目如何诚实展示分布式学习成果？"}],"chosen":"展示可测试的 DDP 教学代码、环境变量和 sampler 逻辑，运行 CPU/Gloo smoke，并明确写出 GPU 多卡未实测；不要声称得到多卡加速或 FSDP 显存收益。","rejected":"把 CPU 双进程结果直接标成双 GPU NCCL 基准即可。"}
+{"prompt":[{"role":"user","content":"为什么后训练还需要冻结评测？"}],"chosen":"因为偏好优化可能只提高训练分布上的偏好指标，同时损伤原有问答、事实性或工具能力；冻结评测用于发现回退，并避免反复针对测试集调参。","rejected":"不需要，训练集 reward margin 足以代表真实用户效果。"}

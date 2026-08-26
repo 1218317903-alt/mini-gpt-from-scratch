@@ -1,0 +1,27 @@
+model:
+  name: Qwen/Qwen2.5-0.5B-Instruct
+  dtype: bfloat16
+  quantization: 4bit
+  max_length: 256
+
+lora:
+  rank: 8
+  alpha: 16
+  dropout: 0.05
+  target_modules: [q_proj, k_proj, v_proj, o_proj]
+
+dpo:
+  beta: 0.1
+  learning_rate: 0.000005
+  weight_decay: 0.0
+  max_optimizer_steps: 30
+  gradient_accumulation_steps: 8
+  max_grad_norm: 1.0
+  warmup_steps: 3
+  minimum_lr_ratio: 0.1
+  micro_batch_size: 1
+
+paths:
+  train_data: hf_lora/data/preferences/train.jsonl
+  validation_data: hf_lora/data/preferences/validation.jsonl
+  artifact_directory: hf_lora/artifacts/qwen2_5_0_5b_dpo_4060
