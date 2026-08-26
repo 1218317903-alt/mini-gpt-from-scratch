@@ -1,0 +1,503 @@
+{
+  "validation": {
+    "ok": true,
+    "case_count": 100,
+    "counts": {
+      "direct_answer": 20,
+      "multi_step": 15,
+      "retrieval": 15,
+      "tool_arguments": 15,
+      "tool_selection": 35
+    },
+    "duplicates": [],
+    "count_errors": {},
+    "unexpected_categories": [],
+    "training_overlap": [],
+    "retrieval_errors": [],
+    "recall_failures": [],
+    "empty_user": [],
+    "manifest": {
+      "split": "dev",
+      "version": "agent-dev-v1",
+      "purpose": "Prompt, routing, data-design and failure-analysis development split.",
+      "frozen": false,
+      "fingerprint": "b61e5a51213dc377df7c8ed16e1507db81df800f74ad87eb662f37d90b45a1ee",
+      "review_status": "pending_owner_signoff",
+      "errors": []
+    }
+  },
+  "comparison": {
+    "ok": true,
+    "baseline": "evals\\results\\qwen25_0_5b_lora_predictions.jsonl",
+    "candidate": "evals\\results\\p2_qwen25_0_5b_heuristic_predictions.jsonl",
+    "baseline_metrics": {
+      "cases_scored": 100,
+      "tool_selection_accuracy": 0.7692307692307693,
+      "json_valid_rate": 1.0,
+      "argument_accuracy": 0.725,
+      "task_success_rate": 0.37,
+      "single_tool_success_rate": 0.6857142857142857,
+      "unnecessary_tool_rate": 0.7428571428571429,
+      "multi_step_avg_calls": 1.5333333333333334,
+      "retrieval_trigger_precision": 0.6153846153846154,
+      "retrieval_trigger_recall": 0.36363636363636365,
+      "end_to_end_rag_recall_at_1": 0.13636363636363635,
+      "end_to_end_rag_recall_at_3": 0.13636363636363635,
+      "end_to_end_rag_recall_at_5": 0.18181818181818182,
+      "conditional_retrieval_recall_at_1": 0.375,
+      "conditional_retrieval_recall_at_3": 0.375,
+      "conditional_retrieval_recall_at_5": 0.5,
+      "rag_recall_at_5": 0.18181818181818182,
+      "baseline_rag_recall_at_5": 1.0,
+      "citation_accuracy": 0.0,
+      "citation_precision": 0.0,
+      "citation_recall": 0.0,
+      "ungrounded_rate": 1.0,
+      "unsupported_answer_rate": 1.0,
+      "recovery_rate": 0.75,
+      "avg_duration_ms": 3907.05159,
+      "avg_generated_tokens": 61.29,
+      "targets": {
+        "json_valid_rate": 0.95,
+        "single_tool_success_rate": 0.85,
+        "unnecessary_tool_rate": 0.1,
+        "rag_recall_at_5": 0.85,
+        "recovery_rate": 0.7
+      }
+    },
+    "candidate_metrics": {
+      "cases_scored": 100,
+      "tool_selection_accuracy": 0.9384615384615385,
+      "json_valid_rate": 1.0,
+      "argument_accuracy": 0.75,
+      "task_success_rate": 0.65,
+      "single_tool_success_rate": 0.7142857142857143,
+      "unnecessary_tool_rate": 0.0,
+      "multi_step_avg_calls": 1.2666666666666666,
+      "retrieval_trigger_precision": 1.0,
+      "retrieval_trigger_recall": 0.8636363636363636,
+      "end_to_end_rag_recall_at_1": 0.4090909090909091,
+      "end_to_end_rag_recall_at_3": 0.4090909090909091,
+      "end_to_end_rag_recall_at_5": 0.45454545454545453,
+      "conditional_retrieval_recall_at_1": 0.47368421052631576,
+      "conditional_retrieval_recall_at_3": 0.47368421052631576,
+      "conditional_retrieval_recall_at_5": 0.5263157894736842,
+      "rag_recall_at_5": 0.45454545454545453,
+      "baseline_rag_recall_at_5": 1.0,
+      "citation_accuracy": 0.0,
+      "citation_precision": null,
+      "citation_recall": 0.0,
+      "ungrounded_rate": 1.0,
+      "unsupported_answer_rate": 1.0,
+      "recovery_rate": 0.75,
+      "avg_duration_ms": 3047.6930999999995,
+      "avg_generated_tokens": 68.06,
+      "targets": {
+        "json_valid_rate": 0.95,
+        "single_tool_success_rate": 0.85,
+        "unnecessary_tool_rate": 0.1,
+        "rag_recall_at_5": 0.85,
+        "recovery_rate": 0.7
+      }
+    },
+    "metric_deltas": {
+      "cases_scored": 0.0,
+      "tool_selection_accuracy": 0.16923076923076918,
+      "json_valid_rate": 0.0,
+      "argument_accuracy": 0.025000000000000022,
+      "task_success_rate": 0.28,
+      "single_tool_success_rate": 0.02857142857142858,
+      "unnecessary_tool_rate": -0.7428571428571429,
+      "multi_step_avg_calls": -0.26666666666666683,
+      "retrieval_trigger_precision": 0.3846153846153846,
+      "retrieval_trigger_recall": 0.5,
+      "end_to_end_rag_recall_at_1": 0.27272727272727276,
+      "end_to_end_rag_recall_at_3": 0.27272727272727276,
+      "end_to_end_rag_recall_at_5": 0.2727272727272727,
+      "conditional_retrieval_recall_at_1": 0.09868421052631576,
+      "conditional_retrieval_recall_at_3": 0.09868421052631576,
+      "conditional_retrieval_recall_at_5": 0.02631578947368418,
+      "rag_recall_at_5": 0.2727272727272727,
+      "baseline_rag_recall_at_5": 0.0,
+      "citation_accuracy": 0.0,
+      "citation_recall": 0.0,
+      "ungrounded_rate": 0.0,
+      "unsupported_answer_rate": 0.0,
+      "recovery_rate": 0.0,
+      "avg_duration_ms": -859.3584900000005,
+      "avg_generated_tokens": 6.770000000000003
+    },
+    "delta_confidence_intervals": {
+      "tool_selection_accuracy": {
+        "point_delta": 0.16923076923076918,
+        "lower": 0.0793650793650793,
+        "upper": 0.2615384615384615,
+        "confidence": 0.95,
+        "valid_samples": 1000,
+        "requested_samples": 1000
+      },
+      "json_valid_rate": {
+        "point_delta": 0.0,
+        "lower": 0.0,
+        "upper": 0.0,
+        "confidence": 0.95,
+        "valid_samples": 1000,
+        "requested_samples": 1000
+      },
+      "argument_accuracy": {
+        "point_delta": 0.025000000000000022,
+        "lower": 0.0,
+        "upper": 0.08108108108108103,
+        "confidence": 0.95,
+        "valid_samples": 1000,
+        "requested_samples": 1000
+      },
+      "task_success_rate": {
+        "point_delta": 0.28,
+        "lower": 0.19,
+        "upper": 0.38,
+        "confidence": 0.95,
+        "valid_samples": 1000,
+        "requested_samples": 1000
+      },
+      "single_tool_success_rate": {
+        "point_delta": 0.02857142857142858,
+        "lower": 0.0,
+        "upper": 0.09523809523809523,
+        "confidence": 0.95,
+        "valid_samples": 1000,
+        "requested_samples": 1000
+      },
+      "unnecessary_tool_rate": {
+        "point_delta": -0.7428571428571429,
+        "lower": -0.8888888888888888,
+        "upper": -0.6060606060606061,
+        "confidence": 0.95,
+        "valid_samples": 1000,
+        "requested_samples": 1000
+      },
+      "retrieval_trigger_precision": {
+        "point_delta": 0.3846153846153846,
+        "lower": 0.09999999999999998,
+        "upper": 0.6666666666666667,
+        "confidence": 0.95,
+        "valid_samples": 1000,
+        "requested_samples": 1000
+      },
+      "retrieval_trigger_recall": {
+        "point_delta": 0.5,
+        "lower": 0.29411764705882354,
+        "upper": 0.7058823529411764,
+        "confidence": 0.95,
+        "valid_samples": 1000,
+        "requested_samples": 1000
+      },
+      "end_to_end_rag_recall_at_5": {
+        "point_delta": 0.2727272727272727,
+        "lower": 0.045405138339921006,
+        "upper": 0.5,
+        "confidence": 0.95,
+        "valid_samples": 1000,
+        "requested_samples": 1000
+      },
+      "conditional_retrieval_recall_at_5": {
+        "point_delta": 0.02631578947368418,
+        "lower": -0.3048351648351647,
+        "upper": 0.35002976190476187,
+        "confidence": 0.95,
+        "valid_samples": 1000,
+        "requested_samples": 1000
+      },
+      "citation_precision": {
+        "point_delta": null,
+        "lower": null,
+        "upper": null,
+        "confidence": 0.95,
+        "valid_samples": 0,
+        "requested_samples": 1000
+      },
+      "citation_recall": {
+        "point_delta": 0.0,
+        "lower": 0.0,
+        "upper": 0.0,
+        "confidence": 0.95,
+        "valid_samples": 1000,
+        "requested_samples": 1000
+      },
+      "unsupported_answer_rate": {
+        "point_delta": 0.0,
+        "lower": 0.0,
+        "upper": 0.0,
+        "confidence": 0.95,
+        "valid_samples": 1000,
+        "requested_samples": 1000
+      },
+      "recovery_rate": {
+        "point_delta": 0.0,
+        "lower": -1.0,
+        "upper": 1.0,
+        "confidence": 0.95,
+        "valid_samples": 982,
+        "requested_samples": 1000
+      }
+    },
+    "case_transitions": {
+      "improved": [
+        "da-001",
+        "da-002",
+        "da-003",
+        "da-004",
+        "da-005",
+        "da-006",
+        "da-007",
+        "da-008",
+        "da-009",
+        "da-010",
+        "da-011",
+        "da-012",
+        "da-015",
+        "da-016",
+        "da-017",
+        "da-018",
+        "da-020",
+        "ms-003",
+        "ms-014",
+        "ta-011",
+        "ts-d-001",
+        "ts-d-003",
+        "ts-d-004",
+        "ts-d-005",
+        "ts-d-006",
+        "ts-d-009",
+        "ts-d-011",
+        "ts-d-012",
+        "ts-d-014"
+      ],
+      "regressed": [
+        "ms-013"
+      ],
+      "unchanged_pass": [
+        "ms-001",
+        "ms-002",
+        "ms-004",
+        "ms-005",
+        "ms-011",
+        "ms-012",
+        "ta-001",
+        "ta-003",
+        "ta-005",
+        "ta-006",
+        "ta-008",
+        "ta-009",
+        "ta-010",
+        "ta-012",
+        "ta-014",
+        "ta-015",
+        "ts-001",
+        "ts-002",
+        "ts-005",
+        "ts-006",
+        "ts-007",
+        "ts-008",
+        "ts-009",
+        "ts-012",
+        "ts-014",
+        "ts-015",
+        "ts-016",
+        "ts-018",
+        "ts-019",
+        "ts-020",
+        "ts-d-002",
+        "ts-d-007",
+        "ts-d-008",
+        "ts-d-010",
+        "ts-d-013",
+        "ts-d-015"
+      ],
+      "unchanged_fail": [
+        "da-013",
+        "da-014",
+        "da-019",
+        "ms-006",
+        "ms-007",
+        "ms-008",
+        "ms-009",
+        "ms-010",
+        "ms-015",
+        "rt-001",
+        "rt-002",
+        "rt-003",
+        "rt-004",
+        "rt-005",
+        "rt-006",
+        "rt-007",
+        "rt-008",
+        "rt-009",
+        "rt-010",
+        "rt-011",
+        "rt-012",
+        "rt-013",
+        "rt-014",
+        "rt-015",
+        "ta-002",
+        "ta-004",
+        "ta-007",
+        "ta-013",
+        "ts-003",
+        "ts-004",
+        "ts-010",
+        "ts-011",
+        "ts-013",
+        "ts-017"
+      ]
+    },
+    "failure_transitions": {
+      "argument_mismatch": {
+        "resolved": [
+          "ta-011"
+        ],
+        "introduced": [],
+        "persistent": [
+          "ta-004",
+          "ta-007",
+          "ta-013",
+          "ts-003",
+          "ts-004",
+          "ts-010",
+          "ts-011",
+          "ts-013",
+          "ts-016",
+          "ts-017"
+        ]
+      },
+      "citation_miss": {
+        "resolved": [],
+        "introduced": [],
+        "persistent": [
+          "ms-006",
+          "ms-007",
+          "ms-008",
+          "ms-009",
+          "ms-010",
+          "ms-014",
+          "ms-015",
+          "rt-001",
+          "rt-002",
+          "rt-003",
+          "rt-004",
+          "rt-005",
+          "rt-006",
+          "rt-007",
+          "rt-008",
+          "rt-009",
+          "rt-010",
+          "rt-011",
+          "rt-012",
+          "rt-013",
+          "rt-014",
+          "rt-015"
+        ]
+      },
+      "missing_tool": {
+        "resolved": [
+          "rt-002",
+          "rt-008",
+          "rt-010",
+          "rt-012",
+          "rt-015"
+        ],
+        "introduced": [],
+        "persistent": [
+          "rt-011",
+          "rt-013",
+          "rt-014"
+        ]
+      },
+      "recovery_failure": {
+        "resolved": [
+          "ms-014"
+        ],
+        "introduced": [
+          "ms-013"
+        ],
+        "persistent": []
+      },
+      "retrieval_miss": {
+        "resolved": [
+          "ms-009",
+          "rt-001",
+          "rt-002",
+          "rt-003",
+          "rt-005",
+          "rt-008",
+          "rt-009"
+        ],
+        "introduced": [
+          "ms-007"
+        ],
+        "persistent": [
+          "ms-010",
+          "ms-014",
+          "rt-004",
+          "rt-006",
+          "rt-007",
+          "rt-010",
+          "rt-011",
+          "rt-012",
+          "rt-013",
+          "rt-014",
+          "rt-015"
+        ]
+      },
+      "runtime_error": {
+        "resolved": [],
+        "introduced": [],
+        "persistent": []
+      },
+      "unnecessary_tool": {
+        "resolved": [
+          "da-001",
+          "da-002",
+          "da-003",
+          "da-004",
+          "da-005",
+          "da-006",
+          "da-007",
+          "da-008",
+          "da-009",
+          "da-010",
+          "da-012",
+          "da-013",
+          "da-014",
+          "da-015",
+          "da-016",
+          "da-017",
+          "da-018",
+          "da-019",
+          "ts-d-001",
+          "ts-d-003",
+          "ts-d-004",
+          "ts-d-005",
+          "ts-d-009",
+          "ts-d-011",
+          "ts-d-012",
+          "ts-d-014"
+        ],
+        "introduced": [],
+        "persistent": []
+      },
+      "wrong_first_tool": {
+        "resolved": [
+          "ms-009",
+          "rt-001",
+          "rt-003",
+          "rt-004",
+          "rt-005",
+          "rt-009"
+        ],
+        "introduced": [],
+        "persistent": []
+      }
+    }
+  }
+}

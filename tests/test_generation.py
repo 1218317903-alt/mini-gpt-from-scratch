@@ -172,6 +172,32 @@ def test_generate_sampling_is_reproducible() -> None:
     assert torch.equal(first, second)
 
 
+def test_generate_accepts_request_local_generator() -> None:
+    model = TrackingLogitModel(torch.tensor([0.0, 1.0, 2.0, 3.0, 4.0]))
+    input_ids = torch.tensor([[0]], dtype=torch.long)
+    global_state = torch.get_rng_state().clone()
+
+    first = generate(
+        model,
+        input_ids,
+        max_new_tokens=4,
+        block_size=8,
+        do_sample=True,
+        generator=torch.Generator().manual_seed(123),
+    )
+    second = generate(
+        model,
+        input_ids,
+        max_new_tokens=4,
+        block_size=8,
+        do_sample=True,
+        generator=torch.Generator().manual_seed(123),
+    )
+
+    assert torch.equal(first, second)
+    assert torch.equal(torch.get_rng_state(), global_state)
+
+
 def test_generate_rejects_empty_prompt_and_supports_zero_new_tokens() -> None:
     model = TrackingLogitModel(torch.tensor([0.0, 1.0]))
 

@@ -2,10 +2,14 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
+import os
 from collections.abc import AsyncIterator, Mapping
 from contextlib import asynccontextmanager
+from dataclasses import asdict
+from pathlib import Path
 from time import perf_counter
 from typing import TYPE_CHECKING
 from uuid import uuid4
@@ -13,11 +17,17 @@ from uuid import uuid4
 from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
 from starlette.middleware.base import RequestResponseEndpoint
 
+from minigpt_service.agent_runtime import AgentRunManager
 from minigpt_service.config import ChatServiceConfig, ServiceConfig
+from minigpt_service.domain_runtime import DomainRuntime
+from minigpt_service.multimodal_routes import register_multimodal_routes
 from minigpt_service.schemas import (
+    AgentCancelResponse,
+    AgentEventResponse,
+    AgentMetricsResponse,
     AgentRequest,
     AgentResponse,
     AgentTraceResponse,
@@ -32,14 +42,34 @@ from minigpt_service.schemas import (
 )
 
 if TYPE_CHECKING:
-    from agent.orchestrator import AgentOrchestrator
+    from agent.domain_adapter import DomainAdapterRegistry
+    from agent.multimodal import MultimodalWorkspace
+    from agent.orchestrator import AgentOrchestrator, AgentProgressEvent, AgentResult
     from minigpt_service.chat_model import ChatModel
     from minigpt_service.model_service import ModelService
 
 SERVICE_NAME = "MiniGPT Inference Service"
-SERVICE_VERSION = "0.2.0"
+SERVICE_VERSION = "0.5.0"
 REQUEST_ID_HEADER = "X-Request-ID"
 logger = logging.getLogger("minigpt_service.http")
+
+_DEMO_HTML = """<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width">
+<title>MiniGPT Agent Demo</title><style>
+body{font:16px system-ui;max-width:920px;margin:40px auto;padding:0 20px;color:#172033;background:#f6f8fb}
+main{background:white;border:1px solid #dce3ed;border-radius:14px;padding:24px;box-shadow:0 8px 30px #20304a12}
+textarea{width:100%;min-height:110px;box-sizing:border-box;padding:12px;border:1px solid #b9c4d4;border-radius:8px}
+button{margin-top:10px;padding:10px 18px;border:0;border-radius:8px;background:#2457d6;color:white;cursor:pointer}
+pre{white-space:pre-wrap;background:#101828;color:#dbeafe;padding:16px;border-radius:8px;min-height:160px}
+.muted{color:#667085;font-size:14px}</style></head><body><main>
+<h1>MiniGPT 可观测 Agent</h1><p class="muted">展示 route、model、tool、plan 与 final SSE 事件；服务端执行仍受步骤、并发、确认和引用白名单约束。</p>
+<textarea id="prompt">请查内部资料后计算相关数值。</textarea><br><button id="send">开始</button>
+<pre id="events">等待请求...</pre></main><script>
+document.querySelector('#send').onclick=async()=>{const out=document.querySelector('#events');out.textContent='';
+const body={messages:[{role:'user',content:document.querySelector('#prompt').value}],greedy:true,max_steps:6};
+const response=await fetch('/agent/chat/stream',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
+const reader=response.body.getReader(),decoder=new TextDecoder();while(true){const {value,done}=await reader.read();if(done)break;out.textContent+=decoder.decode(value);}};
+</script></body></html>"""
 
 
 def _new_request_id() -> str:
@@ -106,8 +136,13 @@ def create_app(
     model_service: ModelService | None = None,
     chat_model: ChatModel | None = None,
     agent: AgentOrchestrator | None = None,
+    multimodal_workspace: MultimodalWorkspace | None = None,
+    domain_registry: DomainAdapterRegistry | None = None,
 ) -> FastAPI:
     """Create a fresh FastAPI application instance."""
+
+    run_manager = AgentRunManager(max_concurrency=2)
+    domain_runtime = DomainRuntime(domain_registry, chat_model)
 
     @asynccontextmanager
     async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
@@ -120,6 +155,10 @@ def create_app(
                 _app.state.chat_model = chat_model
             if agent is not None:
                 _app.state.agent = agent
+            if multimodal_workspace is not None:
+                _app.state.multimodal_workspace = multimodal_workspace
+            if domain_registry is not None:
+                _app.state.domain_registry = domain_registry
             yield
         finally:
             if agent is not None:
@@ -215,6 +254,10 @@ def create_app(
             version=SERVICE_VERSION,
         )
 
+    @service_app.get("/demo", response_class=HTMLResponse, include_in_schema=False)
+    def demo() -> HTMLResponse:
+        return HTMLResponse(_DEMO_HTML)
+
     @service_app.get(
         "/ready",
         response_model=ReadyResponse,
@@ -224,7 +267,12 @@ def create_app(
         model_ready = model_service is not None and model_service.is_ready
         chat_ready = chat_model is not None and chat_model.is_ready
         agent_ready = agent is not None and agent.is_ready
-        if not model_ready and not chat_ready and not agent_ready:
+        if (
+            not model_ready
+            and not chat_ready
+            and not agent_ready
+            and multimodal_workspace is None
+        ):
             raise HTTPException(
                 status_code=503,
                 detail="No model backend is ready.",
@@ -282,14 +330,19 @@ def create_app(
             )
 
         try:
-            result = chat_model.chat(
-                request.messages,
-                max_new_tokens=request.max_new_tokens,
-                temperature=request.temperature,
-                top_k=request.top_k,
-                top_p=request.top_p,
-                greedy=request.greedy,
-                seed=request.seed,
+            from agent.messages import as_message
+
+            result = domain_runtime.run(
+                request,
+                lambda: chat_model.chat(
+                    [as_message(message) for message in request.messages],
+                    max_new_tokens=request.max_new_tokens,
+                    temperature=request.temperature,
+                    top_k=request.top_k,
+                    top_p=request.top_p,
+                    greedy=request.greedy,
+                    seed=request.seed,
+                ),
             )
         except ValueError as error:
             raise HTTPException(status_code=400, detail=str(error)) from error
@@ -303,6 +356,7 @@ def create_app(
             generated_tokens=result.generated_tokens,
             finish_reason=result.finish_reason,
             model=result.model,
+            duration_ms=result.duration_ms,
         )
 
     @service_app.post(
@@ -317,52 +371,216 @@ def create_app(
                 detail="Agent service is not ready.",
             )
 
+        run_id = _new_request_id()
+        token = run_manager.start(run_id)
+        if token is None:
+            raise HTTPException(status_code=429, detail="Agent service is busy.")
+        result = None
         try:
-            result = agent.run(
-                request.messages,
-                max_new_tokens=request.max_new_tokens,
-                temperature=request.temperature,
-                top_k=request.top_k,
-                top_p=request.top_p,
-                greedy=request.greedy,
-                seed=request.seed,
-                max_steps=request.max_steps,
+            result = domain_runtime.run(
+                request,
+                lambda: agent.run(
+                    request.messages,
+                    max_new_tokens=request.max_new_tokens,
+                    temperature=request.temperature,
+                    top_k=request.top_k,
+                    top_p=request.top_p,
+                    greedy=request.greedy,
+                    seed=request.seed,
+                    max_steps=request.max_steps,
+                    approved_side_effects=request.approved_side_effects,
+                    cancellation_token=token,
+                ),
             )
         except ValueError as error:
+            run_manager.finish(run_id, failed=True)
             raise HTTPException(status_code=400, detail=str(error)) from error
         except RuntimeError as error:
+            run_manager.finish(run_id, failed=True)
             raise HTTPException(status_code=503, detail=str(error)) from error
+        except Exception:
+            run_manager.finish(run_id, failed=True)
+            raise
+        run_manager.finish(run_id, result=result)
+        return _agent_response(result, run_id=run_id)
 
-        return AgentResponse(
-            message=ChatMessage(role="assistant", content=result.text),
-            generated_text=result.text,
-            model=result.model,
-            steps=result.steps,
-            tool_calls=result.tool_calls,
-            finish_reason=result.finish_reason,
-            trace=[
-                AgentTraceResponse(
-                    step=trace.step,
-                    call_id=trace.call_id,
-                    name=trace.name,
-                    arguments=trace.arguments,
-                    status=trace.status,
-                    content=trace.content,
-                    duration_ms=trace.duration_ms,
+    @service_app.post(
+        "/agent/chat/stream",
+        summary="Stream route, model, tool, plan, and final Agent events",
+    )
+    async def agent_chat_stream(
+        payload: AgentRequest,
+        http_request: Request,
+    ) -> StreamingResponse:
+        if agent is None or not agent.is_ready:
+            raise HTTPException(status_code=503, detail="Agent service is not ready.")
+        run_id = _request_id(http_request)
+        try:
+            token = run_manager.start(run_id)
+        except ValueError as error:
+            raise HTTPException(status_code=409, detail=str(error)) from error
+        if token is None:
+            raise HTTPException(status_code=429, detail="Agent service is busy.")
+        loop = asyncio.get_running_loop()
+        queue: asyncio.Queue[AgentProgressEvent] = asyncio.Queue()
+
+        def on_progress(event: AgentProgressEvent) -> None:
+            loop.call_soon_threadsafe(queue.put_nowait, event)
+
+        async def execute() -> AgentResult:
+            def run_agent() -> AgentResult:
+                return agent.run(
+                    payload.messages,
+                    max_new_tokens=payload.max_new_tokens,
+                    temperature=payload.temperature,
+                    top_k=payload.top_k,
+                    top_p=payload.top_p,
+                    greedy=payload.greedy,
+                    seed=payload.seed,
+                    max_steps=payload.max_steps,
+                    approved_side_effects=payload.approved_side_effects,
+                    cancellation_token=token,
+                    progress_callback=on_progress,
                 )
-                for trace in result.trace
-            ],
+
+            return await asyncio.to_thread(
+                domain_runtime.run,
+                payload,
+                run_agent,
+            )
+
+        task = asyncio.create_task(execute())
+
+        async def stream() -> AsyncIterator[str]:
+            result: AgentResult | None = None
+            failed = False
+            yield _sse("start", {"run_id": run_id})
+            try:
+                while not task.done() or not queue.empty():
+                    if await http_request.is_disconnected():
+                        token.cancel()
+                    try:
+                        event = await asyncio.wait_for(queue.get(), timeout=0.1)
+                    except TimeoutError:
+                        continue
+                    yield _sse("progress", asdict(event))
+                result = await task
+                yield _sse(
+                    "result", _agent_response(result, run_id=run_id).model_dump()
+                )
+            except Exception as error:
+                failed = True
+                logger.exception("Agent SSE run failed: %s", type(error).__name__)
+                yield _sse("error", {"run_id": run_id, "detail": "Agent run failed."})
+            finally:
+                if not task.done():
+                    token.cancel()
+                    try:
+                        result = await task
+                    except Exception:
+                        failed = True
+                run_manager.finish(run_id, result=result, failed=failed)
+
+        return StreamingResponse(
+            stream(),
+            media_type="text/event-stream",
+            headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
         )
 
+    @service_app.post(
+        "/agent/cancel/{run_id}",
+        response_model=AgentCancelResponse,
+        summary="Request cooperative cancellation for an active Agent run",
+    )
+    def cancel_agent(run_id: str) -> AgentCancelResponse:
+        return AgentCancelResponse(
+            run_id=run_id,
+            cancellation_requested=run_manager.cancel(run_id),
+        )
+
+    @service_app.get(
+        "/agent/metrics",
+        response_model=AgentMetricsResponse,
+        summary="Read process-local Agent operational metrics",
+    )
+    def agent_metrics() -> AgentMetricsResponse:
+        return AgentMetricsResponse(**asdict(run_manager.snapshot()))
+
+    register_multimodal_routes(service_app, multimodal_workspace)
+    domain_runtime.register_routes(service_app)
     return service_app
+
+
+def _agent_response(result: object, *, run_id: str) -> AgentResponse:
+    """Serialize an AgentResult in one place for sync and SSE endpoints."""
+    from agent.orchestrator import AgentResult
+
+    if not isinstance(result, AgentResult):
+        raise TypeError("Expected AgentResult.")
+    return AgentResponse(
+        message=ChatMessage(role="assistant", content=result.text),
+        generated_text=result.text,
+        model=result.model,
+        steps=result.steps,
+        tool_calls=result.tool_calls,
+        finish_reason=result.finish_reason,
+        trace=[
+            AgentTraceResponse(
+                step=trace.step,
+                call_id=trace.call_id,
+                name=trace.name,
+                arguments=trace.arguments,
+                status=trace.status,
+                content=trace.content,
+                duration_ms=trace.duration_ms,
+                confirmation_id=trace.confirmation_id,
+                argument_repaired=trace.argument_repaired,
+                attempts=trace.attempts,
+            )
+            for trace in result.trace
+        ],
+        events=[
+            AgentEventResponse(
+                step=event.step,
+                phase=event.phase,
+                input=event.input,
+                output=event.output,
+                duration_ms=event.duration_ms,
+                error=event.error,
+            )
+            for event in result.events
+        ],
+        run_id=run_id,
+        route=result.route.kind if result.route else None,
+        prompt_tokens=result.usage.prompt_tokens,
+        generated_tokens=result.usage.generated_tokens,
+        model_duration_ms=result.usage.model_duration_ms,
+        tool_duration_ms=result.usage.tool_duration_ms,
+        total_duration_ms=result.usage.total_duration_ms,
+        allowed_citations=list(result.citation.allowed) if result.citation else [],
+        unsupported_citations=(
+            list(result.citation.unsupported) if result.citation else []
+        ),
+    )
+
+
+def _sse(event: str, data: object) -> str:
+    return (
+        f"event: {event}\ndata: {json.dumps(data, ensure_ascii=False, default=str)}\n\n"
+    )
 
 
 def create_app_from_environment() -> FastAPI:
     """Create the production app using ``MINIGPT_*`` environment variables."""
     service_config = ServiceConfig.from_environment()
     chat_config = ChatServiceConfig.from_environment()
+    multimodal_workspace = _multimodal_from_environment()
+    domain_registry = _domain_registry_from_environment()
     if service_config is None and chat_config is None:
-        return create_app()
+        return create_app(
+            multimodal_workspace=multimodal_workspace,
+            domain_registry=domain_registry,
+        )
 
     model_service = None
     chat_model = None
@@ -375,21 +593,100 @@ def create_app_from_environment() -> FastAPI:
         from agent import (
             AgentOrchestrator,
             ChatModelAgentAdapter,
+            HeuristicAgentRouter,
             build_default_registry,
         )
-        from minigpt_service.chat_model import create_huggingface_chat_model
+        from agent.llm import create_huggingface_chat_model
         from minigpt_service.model_service import select_device
 
         chat_model = create_huggingface_chat_model(
             chat_config,
             select_device(chat_config.device),
         )
+        document_workspace = os.getenv("MINIGPT_DOCUMENT_WORKSPACE")
         agent = AgentOrchestrator(
             ChatModelAgentAdapter(chat_model),
-            build_default_registry(),
+            build_default_registry(
+                document_workspace=(
+                    Path(document_workspace) if document_workspace else None
+                ),
+                multimodal_workspace=multimodal_workspace,
+            ),
+            router=HeuristicAgentRouter(),
+        )
+    elif model_service is not None:
+        from agent import (
+            AgentOrchestrator,
+            ChatModelAgentAdapter,
+            HeuristicAgentRouter,
+            build_default_registry,
+        )
+        from agent.llm import MiniGPTChatModel
+
+        chat_model = MiniGPTChatModel(model_service, owns_service=False)
+        document_workspace = os.getenv("MINIGPT_DOCUMENT_WORKSPACE")
+        agent = AgentOrchestrator(
+            ChatModelAgentAdapter(chat_model),
+            build_default_registry(
+                document_workspace=(
+                    Path(document_workspace) if document_workspace else None
+                ),
+                multimodal_workspace=multimodal_workspace,
+            ),
+            router=HeuristicAgentRouter(),
         )
 
-    return create_app(model_service, chat_model, agent)
+    return create_app(
+        model_service,
+        chat_model,
+        agent,
+        multimodal_workspace,
+        domain_registry,
+    )
+
+
+def _multimodal_from_environment() -> MultimodalWorkspace | None:
+    root = os.getenv("MINIGPT_MULTIMODAL_WORKSPACE")
+    if not root:
+        return None
+    from agent.multimodal import (
+        MultimodalWorkspace,
+        Pyttsx3TTSBackend,
+        TransformersTrOCRBackend,
+        TransformersWhisperBackend,
+    )
+
+    cache = Path(
+        os.getenv(
+            "MINIGPT_MULTIMODAL_MODEL_CACHE",
+            str(Path(root) / ".model-cache"),
+        )
+    )
+    ocr = (
+        TransformersTrOCRBackend(cache / "ocr")
+        if os.getenv("MINIGPT_ENABLE_OCR") == "1"
+        else None
+    )
+    asr = (
+        TransformersWhisperBackend(cache / "asr")
+        if os.getenv("MINIGPT_ENABLE_ASR") == "1"
+        else None
+    )
+    tts = Pyttsx3TTSBackend() if os.getenv("MINIGPT_ENABLE_TTS") == "1" else None
+    return MultimodalWorkspace(
+        Path(root), ocr_backend=ocr, asr_backend=asr, tts_backend=tts
+    )
+
+
+def _domain_registry_from_environment() -> DomainAdapterRegistry | None:
+    root = os.getenv("MINIGPT_DOMAIN_ROOT")
+    if not root:
+        return None
+    from agent.domain_adapter import DomainAdapterRegistry
+
+    registry = DomainAdapterRegistry(Path(root))
+    registry.load()
+    return registry
 
 
 app = create_app_from_environment()

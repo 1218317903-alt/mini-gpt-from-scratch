@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from threading import Lock
 from typing import Any
 
 import torch
@@ -15,7 +16,6 @@ from minigpt.utils import (
     compile_model,
     load_checkpoint,
     load_checkpoint_payload,
-    set_random_seed,
 )
 from minigpt_service.config import ServiceConfig
 
@@ -53,6 +53,7 @@ class ModelService:
         self.model: torch.nn.Module | None = None
         self.block_size: int | None = None
         self.checkpoint: dict[str, Any] | None = None
+        self.inference_lock = Lock()
 
     @property
     def is_ready(self) -> bool:
@@ -149,6 +150,30 @@ class ModelService:
             tie_weights=checkpoint_config_value(
                 checkpoint, "model", "tie_weights", model_config.tie_weights
             ),
+            position_encoding=checkpoint_config_value(
+                checkpoint,
+                "model",
+                "position_encoding",
+                model_config.position_encoding,
+            ),
+            norm=checkpoint_config_value(
+                checkpoint, "model", "norm", model_config.norm
+            ),
+            activation=checkpoint_config_value(
+                checkpoint, "model", "activation", model_config.activation
+            ),
+            attention_backend=checkpoint_config_value(
+                checkpoint,
+                "model",
+                "attention_backend",
+                model_config.attention_backend,
+            ),
+            qkv_projection=checkpoint_config_value(
+                checkpoint,
+                "model",
+                "qkv_projection",
+                model_config.qkv_projection,
+            ),
         )
 
     @torch.inference_mode()
@@ -167,21 +192,24 @@ class ModelService:
         """Generate text using the loaded model; endpoint wiring comes next."""
         if not self.is_ready or self.model is None or self.tokenizer is None:
             raise RuntimeError("ModelService is not ready.")
-        if seed is not None:
-            set_random_seed(seed)
         prompt_ids = self.tokenizer.encode(prompt, allow_unknown=False)
         input_ids = torch.tensor([prompt_ids], dtype=torch.long, device=self.device)
         if self.block_size is None:
             raise RuntimeError("ModelService block size is not initialized.")
-        generated_ids = generate(
-            model=self.model,
-            input_ids=input_ids,
-            max_new_tokens=max_new_tokens,
-            block_size=self.block_size,
-            do_sample=not greedy,
-            temperature=temperature,
-            top_k=top_k,
-            top_p=top_p,
-            use_kv_cache=use_kv_cache,
-        )
+        generator = None
+        if seed is not None:
+            generator = torch.Generator(device=self.device).manual_seed(seed)
+        with self.inference_lock:
+            generated_ids = generate(
+                model=self.model,
+                input_ids=input_ids,
+                max_new_tokens=max_new_tokens,
+                block_size=self.block_size,
+                do_sample=not greedy,
+                temperature=temperature,
+                top_k=top_k,
+                top_p=top_p,
+                use_kv_cache=use_kv_cache,
+                generator=generator,
+            )
         return self.tokenizer.decode(generated_ids[0].cpu().tolist())

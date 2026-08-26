@@ -108,7 +108,12 @@ def main() -> None:
         collate_fn=collator,
     )
     amp_dtype = DTYPES[config.model.dtype]
-    base_model = load_base_model(source, dtype_name=config.model.dtype, device=device)
+    base_model = load_base_model(
+        source,
+        dtype_name=config.model.dtype,
+        device=device,
+        quantization=config.model.quantization,
+    )
     baseline_loss = evaluate_token_weighted_loss(
         base_model,
         validation_loader,
@@ -131,6 +136,7 @@ def main() -> None:
         alpha=config.lora.alpha,
         dropout=config.lora.dropout,
         target_modules=config.lora.target_modules,
+        quantization=config.model.quantization,
     )
     summary = summarize_parameters(model)
     if summary.trainable != estimated:
@@ -175,13 +181,21 @@ def main() -> None:
     artifact_directory = resolve_project_path(config.paths.artifact_directory)
     adapter_directory = artifact_directory / "adapter"
     artifact_directory.mkdir(parents=True, exist_ok=True)
+    (artifact_directory / "training_metrics.json").write_text(
+        json.dumps(history, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
     model.save_pretrained(adapter_directory, safe_serialization=True)
     tokenizer.save_pretrained(adapter_directory)
     del model, base_model
     gc.collect()
     torch.cuda.empty_cache()
 
-    fresh_base = load_base_model(source, dtype_name=config.model.dtype, device=device)
+    fresh_base = load_base_model(
+        source,
+        dtype_name=config.model.dtype,
+        device=device,
+        quantization=config.model.quantization,
+    )
     restored = PeftModel.from_pretrained(
         fresh_base, adapter_directory, is_trainable=False
     )
@@ -191,7 +205,13 @@ def main() -> None:
     maximum_logit_difference = float(
         (logits_before_save - logits_after_load).abs().max().item()
     )
-    if not torch.allclose(logits_before_save, logits_after_load, atol=1e-5, rtol=1e-4):
+    reload_logits_close = torch.allclose(
+        logits_before_save.float(),
+        logits_after_load.float(),
+        atol=1e-5,
+        rtol=1e-4,
+    )
+    if not reload_logits_close and config.model.quantization == "none":
         raise RuntimeError(
             f"Adapter 恢复 logits 不一致，最大误差 {maximum_logit_difference}。"
         )
@@ -202,14 +222,26 @@ def main() -> None:
         device=device,
         max_new_tokens=config.generation.max_new_tokens,
     )
+    reload_generation_match = all(
+        trained["response"] == reloaded["response"]
+        for trained, reloaded in zip(after, restored_results, strict=True)
+    )
+    if config.model.quantization == "4bit" and not reload_generation_match:
+        raise RuntimeError("QLoRA 重载后的固定贪心生成与保存前不一致。")
     comparison = {
         "model": config.model.name,
+        "quantization": config.model.quantization,
         "adapter_directory": str(adapter_directory),
         "parameter_summary": summary.__dict__,
         "target_module_count": matched,
         "baseline_validation_loss": baseline_loss,
         "final_validation_loss": final_loss,
         "maximum_reload_logit_difference": maximum_logit_difference,
+        "reload_logits_close": reload_logits_close,
+        "reload_generation_match": reload_generation_match,
+        "reload_check_mode": (
+            "greedy_generation" if config.model.quantization == "4bit" else "logits"
+        ),
         "peak_allocated_mib": torch.cuda.max_memory_allocated() / 1024**2,
         "generation_config": {
             "do_sample": False,
@@ -228,9 +260,6 @@ def main() -> None:
             )
         ],
     }
-    (artifact_directory / "training_metrics.json").write_text(
-        json.dumps(history, ensure_ascii=False, indent=2), encoding="utf-8"
-    )
     (artifact_directory / "comparison.json").write_text(
         json.dumps(comparison, ensure_ascii=False, indent=2), encoding="utf-8"
     )

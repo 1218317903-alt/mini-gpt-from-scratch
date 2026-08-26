@@ -1,0 +1,21 @@
+{
+  "model": "Qwen/Qwen2.5-3B-Instruct",
+  "model_revision": null,
+  "adapter_path": null,
+  "device": "cuda",
+  "dtype": "float16",
+  "quantization": "4bit",
+  "load_ms": 4256.854,
+  "first_token_ms": 454.201,
+  "completion_ms": 280.476,
+  "prompt_tokens": 27,
+  "generated_tokens": 4,
+  "peak_memory_mb": 2052.7,
+  "sample_text": "102",
+  "structured_tool_text": "<tool_call>\n{\"name\": \"calculator\", \"arguments\": {\"expression\": \"17*6\"}}\n</tool_call>",
+  "structured_tool_json_valid": true,
+  "structured_tool_name": "calculator",
+  "structured_tool_arguments": {
+    "expression": "17*6"
+  }
+}

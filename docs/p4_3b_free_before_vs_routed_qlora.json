@@ -1,0 +1,480 @@
+{
+  "validation": {
+    "ok": true,
+    "case_count": 100,
+    "counts": {
+      "direct_answer": 20,
+      "multi_step": 15,
+      "retrieval": 15,
+      "tool_arguments": 15,
+      "tool_selection": 35
+    },
+    "duplicates": [],
+    "count_errors": {},
+    "unexpected_categories": [],
+    "training_overlap": [],
+    "retrieval_errors": [],
+    "recall_failures": [],
+    "empty_user": [],
+    "manifest": {
+      "split": "dev",
+      "version": "agent-dev-v1",
+      "purpose": "Prompt, routing, data-design and failure-analysis development split.",
+      "frozen": false,
+      "fingerprint": "b61e5a51213dc377df7c8ed16e1507db81df800f74ad87eb662f37d90b45a1ee",
+      "review_status": "pending_owner_signoff",
+      "errors": []
+    }
+  },
+  "comparison": {
+    "ok": true,
+    "baseline": "evals\\results\\qwen25_3b_4bit_predictions.jsonl",
+    "candidate": "evals\\results\\p4_agent_v1_1_3b_qlora_dev_predictions.jsonl",
+    "baseline_metrics": {
+      "cases_scored": 100,
+      "tool_selection_accuracy": 0.8307692307692308,
+      "json_valid_rate": 1.0,
+      "argument_accuracy": 0.825,
+      "task_success_rate": 0.52,
+      "single_tool_success_rate": 0.8285714285714286,
+      "unnecessary_tool_rate": 0.5142857142857142,
+      "multi_step_avg_calls": 1.2666666666666666,
+      "retrieval_trigger_precision": 0.4444444444444444,
+      "retrieval_trigger_recall": 0.5454545454545454,
+      "end_to_end_rag_recall_at_1": 0.5,
+      "end_to_end_rag_recall_at_3": 0.5,
+      "end_to_end_rag_recall_at_5": 0.5,
+      "conditional_retrieval_recall_at_1": 0.9166666666666666,
+      "conditional_retrieval_recall_at_3": 0.9166666666666666,
+      "conditional_retrieval_recall_at_5": 0.9166666666666666,
+      "rag_recall_at_5": 0.5,
+      "baseline_rag_recall_at_5": 1.0,
+      "citation_accuracy": 0.4090909090909091,
+      "citation_precision": 0.5625,
+      "citation_recall": 0.4090909090909091,
+      "ungrounded_rate": 0.5909090909090909,
+      "unsupported_answer_rate": 0.5909090909090909,
+      "recovery_rate": 0.75,
+      "avg_duration_ms": 7596.123929999999,
+      "avg_generated_tokens": 76.2,
+      "targets": {
+        "json_valid_rate": 0.95,
+        "single_tool_success_rate": 0.85,
+        "unnecessary_tool_rate": 0.1,
+        "rag_recall_at_5": 0.85,
+        "recovery_rate": 0.7
+      }
+    },
+    "candidate_metrics": {
+      "cases_scored": 100,
+      "tool_selection_accuracy": 0.8615384615384616,
+      "json_valid_rate": 1.0,
+      "argument_accuracy": 0.8,
+      "task_success_rate": 0.78,
+      "single_tool_success_rate": 0.8,
+      "unnecessary_tool_rate": 0.0,
+      "multi_step_avg_calls": 1.2,
+      "retrieval_trigger_precision": 1.0,
+      "retrieval_trigger_recall": 0.6363636363636364,
+      "end_to_end_rag_recall_at_1": 0.6363636363636364,
+      "end_to_end_rag_recall_at_3": 0.6363636363636364,
+      "end_to_end_rag_recall_at_5": 0.6363636363636364,
+      "conditional_retrieval_recall_at_1": 1.0,
+      "conditional_retrieval_recall_at_3": 1.0,
+      "conditional_retrieval_recall_at_5": 1.0,
+      "rag_recall_at_5": 0.6363636363636364,
+      "baseline_rag_recall_at_5": 1.0,
+      "citation_accuracy": 0.6363636363636364,
+      "citation_precision": 0.7777777777777778,
+      "citation_recall": 0.6363636363636364,
+      "ungrounded_rate": 0.2727272727272727,
+      "unsupported_answer_rate": 0.2727272727272727,
+      "recovery_rate": 0.75,
+      "avg_duration_ms": 5348.77798,
+      "avg_generated_tokens": 34.17,
+      "targets": {
+        "json_valid_rate": 0.95,
+        "single_tool_success_rate": 0.85,
+        "unnecessary_tool_rate": 0.1,
+        "rag_recall_at_5": 0.85,
+        "recovery_rate": 0.7
+      }
+    },
+    "metric_deltas": {
+      "cases_scored": 0.0,
+      "tool_selection_accuracy": 0.03076923076923077,
+      "json_valid_rate": 0.0,
+      "argument_accuracy": -0.02499999999999991,
+      "task_success_rate": 0.26,
+      "single_tool_success_rate": -0.02857142857142858,
+      "unnecessary_tool_rate": -0.5142857142857142,
+      "multi_step_avg_calls": -0.06666666666666665,
+      "retrieval_trigger_precision": 0.5555555555555556,
+      "retrieval_trigger_recall": 0.09090909090909094,
+      "end_to_end_rag_recall_at_1": 0.13636363636363635,
+      "end_to_end_rag_recall_at_3": 0.13636363636363635,
+      "end_to_end_rag_recall_at_5": 0.13636363636363635,
+      "conditional_retrieval_recall_at_1": 0.08333333333333337,
+      "conditional_retrieval_recall_at_3": 0.08333333333333337,
+      "conditional_retrieval_recall_at_5": 0.08333333333333337,
+      "rag_recall_at_5": 0.13636363636363635,
+      "baseline_rag_recall_at_5": 0.0,
+      "citation_accuracy": 0.22727272727272724,
+      "citation_precision": 0.2152777777777778,
+      "citation_recall": 0.22727272727272724,
+      "ungrounded_rate": -0.31818181818181823,
+      "unsupported_answer_rate": -0.31818181818181823,
+      "recovery_rate": 0.0,
+      "avg_duration_ms": -2247.345949999999,
+      "avg_generated_tokens": -42.03
+    },
+    "delta_confidence_intervals": {
+      "tool_selection_accuracy": {
+        "point_delta": 0.03076923076923077,
+        "lower": -0.037753991291727115,
+        "upper": 0.10715659340659335,
+        "confidence": 0.95,
+        "valid_samples": 1000,
+        "requested_samples": 1000
+      },
+      "json_valid_rate": {
+        "point_delta": 0.0,
+        "lower": 0.0,
+        "upper": 0.0,
+        "confidence": 0.95,
+        "valid_samples": 1000,
+        "requested_samples": 1000
+      },
+      "argument_accuracy": {
+        "point_delta": -0.02499999999999991,
+        "lower": -0.07894736842105265,
+        "upper": 0.0,
+        "confidence": 0.95,
+        "valid_samples": 1000,
+        "requested_samples": 1000
+      },
+      "task_success_rate": {
+        "point_delta": 0.26,
+        "lower": 0.16000000000000003,
+        "upper": 0.37,
+        "confidence": 0.95,
+        "valid_samples": 1000,
+        "requested_samples": 1000
+      },
+      "single_tool_success_rate": {
+        "point_delta": -0.02857142857142858,
+        "lower": -0.09375,
+        "upper": 0.0,
+        "confidence": 0.95,
+        "valid_samples": 1000,
+        "requested_samples": 1000
+      },
+      "unnecessary_tool_rate": {
+        "point_delta": -0.5142857142857142,
+        "lower": -0.6764943074003795,
+        "upper": -0.35135135135135137,
+        "confidence": 0.95,
+        "valid_samples": 1000,
+        "requested_samples": 1000
+      },
+      "retrieval_trigger_precision": {
+        "point_delta": 0.5555555555555556,
+        "lower": 0.36650000000000016,
+        "upper": 0.75,
+        "confidence": 0.95,
+        "valid_samples": 1000,
+        "requested_samples": 1000
+      },
+      "retrieval_trigger_recall": {
+        "point_delta": 0.09090909090909094,
+        "lower": -0.125,
+        "upper": 0.3125,
+        "confidence": 0.95,
+        "valid_samples": 1000,
+        "requested_samples": 1000
+      },
+      "end_to_end_rag_recall_at_5": {
+        "point_delta": 0.13636363636363635,
+        "lower": -0.08363095238095215,
+        "upper": 0.380952380952381,
+        "confidence": 0.95,
+        "valid_samples": 1000,
+        "requested_samples": 1000
+      },
+      "conditional_retrieval_recall_at_5": {
+        "point_delta": 0.08333333333333337,
+        "lower": 0.0,
+        "upper": 0.285924369747899,
+        "confidence": 0.95,
+        "valid_samples": 1000,
+        "requested_samples": 1000
+      },
+      "citation_precision": {
+        "point_delta": 0.2152777777777778,
+        "lower": -0.11739130434782608,
+        "upper": 0.5,
+        "confidence": 0.95,
+        "valid_samples": 1000,
+        "requested_samples": 1000
+      },
+      "citation_recall": {
+        "point_delta": 0.22727272727272724,
+        "lower": -0.03999999999999998,
+        "upper": 0.48049999999999954,
+        "confidence": 0.95,
+        "valid_samples": 1000,
+        "requested_samples": 1000
+      },
+      "unsupported_answer_rate": {
+        "point_delta": -0.31818181818181823,
+        "lower": -0.5625,
+        "upper": -0.07400793650793658,
+        "confidence": 0.95,
+        "valid_samples": 1000,
+        "requested_samples": 1000
+      },
+      "recovery_rate": {
+        "point_delta": 0.0,
+        "lower": -1.0,
+        "upper": 0.7737500000000012,
+        "confidence": 0.95,
+        "valid_samples": 982,
+        "requested_samples": 1000
+      }
+    },
+    "case_transitions": {
+      "improved": [
+        "da-001",
+        "da-002",
+        "da-003",
+        "da-004",
+        "da-006",
+        "da-007",
+        "da-009",
+        "da-010",
+        "da-011",
+        "da-012",
+        "da-013",
+        "da-015",
+        "da-016",
+        "da-017",
+        "ms-006",
+        "ms-009",
+        "ms-011",
+        "ms-015",
+        "rt-002",
+        "rt-007",
+        "rt-008",
+        "rt-015",
+        "ts-d-001",
+        "ts-d-002",
+        "ts-d-003",
+        "ts-d-005",
+        "ts-d-008",
+        "ts-d-009",
+        "ts-d-011",
+        "ts-d-013"
+      ],
+      "regressed": [
+        "ms-013",
+        "rt-004",
+        "rt-013",
+        "ts-011"
+      ],
+      "unchanged_pass": [
+        "da-008",
+        "da-019",
+        "ms-001",
+        "ms-002",
+        "ms-003",
+        "ms-004",
+        "ms-005",
+        "ms-008",
+        "ms-010",
+        "ms-012",
+        "ms-014",
+        "rt-001",
+        "rt-005",
+        "rt-010",
+        "ta-001",
+        "ta-002",
+        "ta-003",
+        "ta-005",
+        "ta-006",
+        "ta-008",
+        "ta-009",
+        "ta-010",
+        "ta-012",
+        "ta-013",
+        "ta-014",
+        "ta-015",
+        "ts-001",
+        "ts-002",
+        "ts-004",
+        "ts-005",
+        "ts-006",
+        "ts-007",
+        "ts-008",
+        "ts-009",
+        "ts-012",
+        "ts-014",
+        "ts-015",
+        "ts-016",
+        "ts-017",
+        "ts-018",
+        "ts-019",
+        "ts-020",
+        "ts-d-004",
+        "ts-d-007",
+        "ts-d-010",
+        "ts-d-012",
+        "ts-d-014",
+        "ts-d-015"
+      ],
+      "unchanged_fail": [
+        "da-005",
+        "da-014",
+        "da-018",
+        "da-020",
+        "ms-007",
+        "rt-003",
+        "rt-006",
+        "rt-009",
+        "rt-011",
+        "rt-012",
+        "rt-014",
+        "ta-004",
+        "ta-007",
+        "ta-011",
+        "ts-003",
+        "ts-010",
+        "ts-013",
+        "ts-d-006"
+      ]
+    },
+    "failure_transitions": {
+      "argument_mismatch": {
+        "resolved": [],
+        "introduced": [
+          "ts-011"
+        ],
+        "persistent": [
+          "ta-004",
+          "ta-007",
+          "ta-011",
+          "ts-003",
+          "ts-010",
+          "ts-013",
+          "ts-016"
+        ]
+      },
+      "citation_miss": {
+        "resolved": [
+          "ms-006",
+          "ms-009",
+          "ms-015",
+          "rt-002",
+          "rt-007",
+          "rt-008",
+          "rt-015"
+        ],
+        "introduced": [
+          "rt-004",
+          "rt-013"
+        ],
+        "persistent": [
+          "rt-003",
+          "rt-006",
+          "rt-009",
+          "rt-011",
+          "rt-012",
+          "rt-014"
+        ]
+      },
+      "missing_tool": {
+        "resolved": [
+          "rt-002",
+          "rt-007",
+          "rt-008",
+          "rt-015"
+        ],
+        "introduced": [
+          "rt-004",
+          "rt-013"
+        ],
+        "persistent": [
+          "rt-003",
+          "rt-006",
+          "rt-009",
+          "rt-011",
+          "rt-012",
+          "rt-014"
+        ]
+      },
+      "recovery_failure": {
+        "resolved": [
+          "ms-011"
+        ],
+        "introduced": [
+          "ms-013"
+        ],
+        "persistent": []
+      },
+      "retrieval_miss": {
+        "resolved": [
+          "ms-015",
+          "rt-002",
+          "rt-007",
+          "rt-008",
+          "rt-015"
+        ],
+        "introduced": [
+          "rt-004",
+          "rt-013"
+        ],
+        "persistent": [
+          "rt-003",
+          "rt-006",
+          "rt-009",
+          "rt-011",
+          "rt-012",
+          "rt-014"
+        ]
+      },
+      "runtime_error": {
+        "resolved": [],
+        "introduced": [],
+        "persistent": []
+      },
+      "unnecessary_tool": {
+        "resolved": [
+          "da-001",
+          "da-002",
+          "da-004",
+          "da-006",
+          "da-010",
+          "da-011",
+          "da-013",
+          "da-014",
+          "da-018",
+          "ts-d-001",
+          "ts-d-002",
+          "ts-d-003",
+          "ts-d-005",
+          "ts-d-006",
+          "ts-d-008",
+          "ts-d-009",
+          "ts-d-011",
+          "ts-d-013"
+        ],
+        "introduced": [],
+        "persistent": []
+      },
+      "wrong_first_tool": {
+        "resolved": [],
+        "introduced": [],
+        "persistent": []
+      }
+    }
+  }
+}

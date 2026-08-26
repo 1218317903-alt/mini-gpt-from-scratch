@@ -150,6 +150,11 @@ def build_model(
         expansion_factor=model_config.expansion_factor,
         tie_weights=model_config.tie_weights,
         dropout=dropout,
+        position_encoding=model_config.position_encoding,
+        norm=model_config.norm,
+        activation=model_config.activation,
+        attention_backend=model_config.attention_backend,
+        qkv_projection=model_config.qkv_projection,
     )
 
 

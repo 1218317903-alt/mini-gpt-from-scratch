@@ -44,6 +44,7 @@ def compute_language_model_loss(
     loss = F.cross_entropy(
         flattened_logits,
         flattened_targets,
+        ignore_index=-100,
     )
 
     return logits, loss
@@ -112,7 +113,7 @@ def train_accumulation_step(
     if amp_dtype != torch.float16 and scaler is not None:
         raise ValueError("GradScaler 只应在 FP16 路径中使用。")
 
-    token_counts = [targets.numel() for _, targets in micro_batches]
+    token_counts = [int((targets != -100).sum().item()) for _, targets in micro_batches]
     if any(count <= 0 for count in token_counts):
         raise ValueError("每个 Micro Batch 必须包含至少一个目标 Token。")
     total_token_count = sum(token_counts)

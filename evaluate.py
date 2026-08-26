@@ -150,6 +150,30 @@ def main() -> None:
             "tie_weights",
             model_config.tie_weights,
         ),
+        position_encoding=checkpoint_config_value(
+            checkpoint_payload,
+            "model",
+            "position_encoding",
+            model_config.position_encoding,
+        ),
+        norm=checkpoint_config_value(
+            checkpoint_payload, "model", "norm", model_config.norm
+        ),
+        activation=checkpoint_config_value(
+            checkpoint_payload, "model", "activation", model_config.activation
+        ),
+        attention_backend=checkpoint_config_value(
+            checkpoint_payload,
+            "model",
+            "attention_backend",
+            model_config.attention_backend,
+        ),
+        qkv_projection=checkpoint_config_value(
+            checkpoint_payload,
+            "model",
+            "qkv_projection",
+            model_config.qkv_projection,
+        ),
     )
 
     model = model.to(device)

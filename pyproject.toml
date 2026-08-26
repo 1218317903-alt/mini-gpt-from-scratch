@@ -3,7 +3,7 @@ name = "mini-gpt-from-scratch"
 version = "0.1.0"
 description = "A tested decoder-only MiniGPT and Hugging Face LoRA learning project."
 readme = "README.md"
-requires-python = ">=3.11,<3.13"
+requires-python = ">=3.11.16,<3.12"
 dependencies = [
     "pyyaml>=6.0.2,<7",
     "torch>=2.6,<3",
@@ -23,10 +23,22 @@ hf = [
     "peft>=0.15,<1",
     "safetensors>=0.5,<1",
     "transformers>=4.49,<6",
+    "bitsandbytes>=0.46,<1",
 ]
 service = [
     "fastapi>=0.116,<1",
     "uvicorn[standard]>=0.35,<1",
+]
+documents = [
+    "python-docx>=1.1,<2",
+    "reportlab>=4.2,<5",
+    "pypdf>=5,<7",
+]
+multimodal = [
+    "pillow>=11,<13",
+    "pyttsx3>=2.99,<3",
+    "sentencepiece>=0.2,<1",
+    "protobuf>=5,<7",
 ]
 viz = ["matplotlib>=3.9,<4"]
 
@@ -55,11 +67,11 @@ markers = [
 ]
 
 [tool.coverage.run]
-source = ["minigpt", "hf_lora", "agent"]
+source = ["minigpt", "hf_lora", "agent", "minigpt_service", "evals"]
 branch = true
 
 [tool.coverage.report]
-fail_under = 60
+fail_under = 70
 show_missing = true
 skip_covered = true
 
@@ -79,6 +91,7 @@ files = [
     "evaluate.py",
     "generate.py",
     "scripts",
+    "evals",
 ]
 check_untyped_defs = true
 disallow_untyped_defs = true
@@ -88,5 +101,14 @@ warn_unused_ignores = true
 show_error_codes = true
 
 [[tool.mypy.overrides]]
-module = ["matplotlib", "matplotlib.*"]
+module = [
+    "docx",
+    "docx.*",
+    "matplotlib",
+    "matplotlib.*",
+    "pypdf",
+    "pypdf.*",
+    "reportlab",
+    "reportlab.*",
+]
 ignore_missing_imports = true

@@ -64,6 +64,7 @@ class ChatServiceConfig:
     adapter_path: Path | None = None
     device: str = "auto"
     dtype: str = "float32"
+    quantization: str = "none"
     max_input_tokens: int = 4096
     local_files_only: bool = False
 
@@ -95,11 +96,13 @@ class ChatServiceConfig:
                 "MINIGPT_CHAT_MAX_INPUT_TOKENS must be an integer."
             ) from error
 
+        quantization = os.getenv("MINIGPT_CHAT_QUANTIZATION", "none").strip().lower()
         return cls(
             model_source=source_value,
             adapter_path=Path(adapter_value) if adapter_value else None,
             device=os.getenv("MINIGPT_DEVICE", "auto"),
             dtype=os.getenv("MINIGPT_CHAT_DTYPE", "float32"),
+            quantization=quantization,
             max_input_tokens=max_input_tokens,
             local_files_only=local_only in {"1", "true", "yes"},
         )
@@ -111,5 +114,7 @@ class ChatServiceConfig:
             raise ValueError("device must be one of: auto, cpu, cuda, mps.")
         if self.dtype not in {"float16", "bfloat16", "float32"}:
             raise ValueError("dtype must be float16, bfloat16, or float32.")
+        if self.quantization not in {"none", "4bit", "8bit"}:
+            raise ValueError("quantization must be none, 4bit, or 8bit.")
         if self.max_input_tokens <= 0:
             raise ValueError("max_input_tokens must be greater than zero.")

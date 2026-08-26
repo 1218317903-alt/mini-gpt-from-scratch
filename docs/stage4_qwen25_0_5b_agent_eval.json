@@ -1,0 +1,215 @@
+{
+  "validation": {
+    "ok": true,
+    "case_count": 100,
+    "counts": {
+      "direct_answer": 20,
+      "multi_step": 15,
+      "retrieval": 15,
+      "tool_arguments": 15,
+      "tool_selection": 35
+    },
+    "duplicates": [],
+    "count_errors": {},
+    "training_overlap": [],
+    "retrieval_errors": [],
+    "recall_failures": [],
+    "empty_user": []
+  },
+  "run": {
+    "model": "Qwen/Qwen2.5-0.5B-Instruct",
+    "adapter_path": "D:\\mini-gpt-from-scratch\\hf_lora\\artifacts\\qwen2_5_0_5b_lora\\adapter",
+    "device": "cuda",
+    "dtype": "float32",
+    "quantization": "none",
+    "selected_cases": 100,
+    "predictions_written": 0,
+    "predictions_available": 100,
+    "predictions_output": "evals\\results\\qwen25_0_5b_lora_predictions.jsonl",
+    "generation": {
+      "max_new_tokens": 128,
+      "temperature": 0.7,
+      "greedy": true,
+      "seed": 42
+    }
+  },
+  "scoring": {
+    "ok": true,
+    "metrics": {
+      "cases_scored": 100,
+      "tool_selection_accuracy": 0.7692307692307693,
+      "json_valid_rate": 1.0,
+      "argument_accuracy": 0.725,
+      "task_success_rate": 0.37,
+      "single_tool_success_rate": 0.6857142857142857,
+      "unnecessary_tool_rate": 0.7428571428571429,
+      "multi_step_avg_calls": 1.5333333333333334,
+      "rag_recall_at_5": 0.18181818181818182,
+      "baseline_rag_recall_at_5": 1.0,
+      "citation_accuracy": 0.0,
+      "ungrounded_rate": 1.0,
+      "recovery_rate": 0.75,
+      "avg_duration_ms": 3907.05159,
+      "avg_generated_tokens": 61.29,
+      "targets": {
+        "json_valid_rate": 0.95,
+        "single_tool_success_rate": 0.85,
+        "unnecessary_tool_rate": 0.1,
+        "rag_recall_at_5": 0.85,
+        "recovery_rate": 0.7
+      }
+    },
+    "targets": {
+      "json_valid_rate": true,
+      "single_tool_success_rate": false,
+      "unnecessary_tool_rate": false,
+      "rag_recall_at_5": false,
+      "recovery_rate": true
+    },
+    "failure_analysis": {
+      "category_success": {
+        "direct_answer": {
+          "cases": 20,
+          "successes": 0,
+          "success_rate": 0.0
+        },
+        "multi_step": {
+          "cases": 15,
+          "successes": 7,
+          "success_rate": 0.4666666666666667
+        },
+        "retrieval": {
+          "cases": 15,
+          "successes": 0,
+          "success_rate": 0.0
+        },
+        "tool_arguments": {
+          "cases": 15,
+          "successes": 10,
+          "success_rate": 0.6666666666666666
+        },
+        "tool_selection": {
+          "cases": 35,
+          "successes": 20,
+          "success_rate": 0.5714285714285714
+        }
+      },
+      "failure_case_ids": {
+        "wrong_first_tool": [
+          "ms-009",
+          "rt-001",
+          "rt-003",
+          "rt-004",
+          "rt-005",
+          "rt-009"
+        ],
+        "missing_tool": [
+          "rt-002",
+          "rt-008",
+          "rt-010",
+          "rt-011",
+          "rt-012",
+          "rt-013",
+          "rt-014",
+          "rt-015"
+        ],
+        "unnecessary_tool": [
+          "da-001",
+          "da-002",
+          "da-003",
+          "da-004",
+          "da-005",
+          "da-006",
+          "da-007",
+          "da-008",
+          "da-009",
+          "da-010",
+          "da-012",
+          "da-013",
+          "da-014",
+          "da-015",
+          "da-016",
+          "da-017",
+          "da-018",
+          "da-019",
+          "ts-d-001",
+          "ts-d-003",
+          "ts-d-004",
+          "ts-d-005",
+          "ts-d-009",
+          "ts-d-011",
+          "ts-d-012",
+          "ts-d-014"
+        ],
+        "argument_mismatch": [
+          "ta-004",
+          "ta-007",
+          "ta-011",
+          "ta-013",
+          "ts-003",
+          "ts-004",
+          "ts-010",
+          "ts-011",
+          "ts-013",
+          "ts-016",
+          "ts-017"
+        ],
+        "retrieval_miss": [
+          "ms-009",
+          "ms-010",
+          "ms-014",
+          "rt-001",
+          "rt-002",
+          "rt-003",
+          "rt-004",
+          "rt-005",
+          "rt-006",
+          "rt-007",
+          "rt-008",
+          "rt-009",
+          "rt-010",
+          "rt-011",
+          "rt-012",
+          "rt-013",
+          "rt-014",
+          "rt-015"
+        ],
+        "citation_miss": [
+          "ms-006",
+          "ms-007",
+          "ms-008",
+          "ms-009",
+          "ms-010",
+          "ms-014",
+          "ms-015",
+          "rt-001",
+          "rt-002",
+          "rt-003",
+          "rt-004",
+          "rt-005",
+          "rt-006",
+          "rt-007",
+          "rt-008",
+          "rt-009",
+          "rt-010",
+          "rt-011",
+          "rt-012",
+          "rt-013",
+          "rt-014",
+          "rt-015"
+        ],
+        "recovery_failure": [
+          "ms-014"
+        ],
+        "runtime_error": []
+      },
+      "finish_reason_counts": {
+        "max_steps": 1,
+        "stop": 99
+      }
+    },
+    "missing_predictions": [],
+    "duplicate_predictions": [],
+    "unknown_predictions": []
+  }
+}

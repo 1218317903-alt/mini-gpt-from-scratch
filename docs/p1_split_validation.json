@@ -1,0 +1,62 @@
+{
+  "ok": true,
+  "dev": {
+    "ok": true,
+    "case_count": 100,
+    "counts": {
+      "direct_answer": 20,
+      "multi_step": 15,
+      "retrieval": 15,
+      "tool_arguments": 15,
+      "tool_selection": 35
+    },
+    "duplicates": [],
+    "count_errors": {},
+    "unexpected_categories": [],
+    "training_overlap": [],
+    "retrieval_errors": [],
+    "recall_failures": [],
+    "empty_user": [],
+    "manifest": {
+      "split": "dev",
+      "version": "agent-dev-v1",
+      "purpose": "Prompt, routing, data-design and failure-analysis development split.",
+      "frozen": false,
+      "fingerprint": "b61e5a51213dc377df7c8ed16e1507db81df800f74ad87eb662f37d90b45a1ee",
+      "review_status": "pending_owner_signoff",
+      "errors": []
+    }
+  },
+  "frozen_test": {
+    "ok": true,
+    "case_count": 150,
+    "counts": {
+      "direct_answer": 30,
+      "multi_step": 20,
+      "retrieval": 30,
+      "tool_arguments": 25,
+      "tool_selection": 45
+    },
+    "duplicates": [],
+    "count_errors": {},
+    "unexpected_categories": [],
+    "training_overlap": [],
+    "retrieval_errors": [],
+    "recall_failures": [],
+    "empty_user": [],
+    "manifest": {
+      "split": "frozen_test",
+      "version": "agent-frozen-test-v1",
+      "purpose": "Release-only generalization test; never use for prompt or SFT tuning.",
+      "frozen": true,
+      "fingerprint": "06fde3d735893adcbc37f52da6c48e6573e5366b3289a5459b228c6918790444",
+      "review_status": "approved",
+      "errors": []
+    }
+  },
+  "duplicate_case_ids": [],
+  "prompt_overlap": {
+    "exact": [],
+    "near": []
+  }
+}

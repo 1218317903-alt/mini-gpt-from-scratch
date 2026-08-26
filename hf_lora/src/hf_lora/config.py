@@ -14,6 +14,7 @@ class ModelConfig:
     name: str
     dtype: str
     max_length: int
+    quantization: str
 
 
 @dataclass(frozen=True)
@@ -84,6 +85,7 @@ def load_experiment_config(path: Path) -> ExperimentConfig:
             name=str(model["name"]),
             dtype=str(model.get("dtype", "float16")),
             max_length=int(model["max_length"]),
+            quantization=str(model.get("quantization", "none")),
         ),
         lora=LoRAConfig(
             rank=int(lora["rank"]),
@@ -123,6 +125,8 @@ def _validate_config(config: ExperimentConfig) -> None:
         raise ValueError("model.dtype 必须是 float16、bfloat16 或 float32。")
     if config.model.max_length <= 1:
         raise ValueError("max_length 必须大于 1。")
+    if config.model.quantization not in {"none", "4bit"}:
+        raise ValueError("model.quantization 必须是 none 或 4bit。")
     if config.lora.rank <= 0 or config.lora.alpha <= 0:
         raise ValueError("LoRA rank 和 alpha 必须大于 0。")
     if not 0.0 <= config.lora.dropout < 1.0:

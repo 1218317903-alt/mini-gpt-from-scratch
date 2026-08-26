@@ -15,7 +15,7 @@ concurrency:
 
 jobs:
   test:
-    name: Python 3.11 tests
+    name: Python 3.11.16 tests
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
@@ -38,7 +38,7 @@ jobs:
           cache-dependency-glob: uv.lock
 
       - name: Install locked dependencies
-        run: uv sync --locked --extra dev --extra hf --extra service --extra viz
+        run: uv sync --locked --extra dev --extra hf --extra service --extra viz --extra documents --extra multimodal
 
       - name: Verify environment
         run: uv run python -c "import sys, torch; print(sys.version); print(torch.__version__)"
@@ -52,5 +52,29 @@ jobs:
       - name: Type check
         run: uv run mypy
 
+      - name: Validate Agent evaluation inventories
+        run: uv run python evals/validate_splits.py
+
+      - name: Replay evaluator fixture (inventory semantics only)
+        run: >-
+          uv run python evals/run_agent_eval.py
+          --predictions evals/fixtures/qwen25_0_5b_dev_smoke_predictions.jsonl
+          --case-id da-001
+          --case-id ms-011
+          --case-id rt-001
+          --case-id ts-001
+          --case-id ts-d-001
+
       - name: Run test suite
-        run: uv run pytest -q --cov=minigpt --cov=hf_lora --cov=agent --cov-report=term-missing
+        run: >-
+          uv run pytest -q
+          --cov=minigpt
+          --cov=hf_lora
+          --cov=agent
+          --cov=minigpt_service
+          --cov=evals
+          --cov-report=term-missing
+          --cov-report=json:coverage.json
+
+      - name: Enforce critical module coverage floors
+        run: uv run python scripts/check_critical_coverage.py coverage.json

@@ -1,0 +1,17 @@
+{
+  "domain_id": "adult_optional",
+  "display_name": "成年人可选领域模板",
+  "description": "隔离、默认关闭且必须授权的模板；不包含训练数据或权重。",
+  "base_model": "Qwen/Qwen2.5-3B-Instruct",
+  "adapter_path": "adapters/adult_optional",
+  "dataset_path": "datasets/adult_optional.jsonl",
+  "enabled": false,
+  "access_mode": "restricted",
+  "access_token_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "data_classification": "restricted",
+  "adult_content_enabled": true,
+  "minimum_age": 18,
+  "require_consent_attestation": true,
+  "allowed_capabilities": ["text"],
+  "license_summary": "Only verified adult, consensual, licensed, privacy-reviewed data may be used."
+}

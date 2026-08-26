@@ -79,6 +79,7 @@ def test_chat_environment_config_parses_local_model_settings(
     monkeypatch.setenv("MINIGPT_CHAT_ADAPTER_PATH", str(adapter_path))
     monkeypatch.setenv("MINIGPT_DEVICE", "cpu")
     monkeypatch.setenv("MINIGPT_CHAT_DTYPE", "float32")
+    monkeypatch.setenv("MINIGPT_CHAT_QUANTIZATION", "4bit")
     monkeypatch.setenv("MINIGPT_CHAT_MAX_INPUT_TOKENS", "2048")
     monkeypatch.setenv("MINIGPT_CHAT_LOCAL_FILES_ONLY", "yes")
 
@@ -89,6 +90,7 @@ def test_chat_environment_config_parses_local_model_settings(
         adapter_path=adapter_path,
         device="cpu",
         dtype="float32",
+        quantization="4bit",
         max_input_tokens=2048,
         local_files_only=True,
     )
@@ -101,4 +103,14 @@ def test_chat_environment_config_requires_model_source(
     monkeypatch.setenv("MINIGPT_CHAT_ADAPTER_PATH", str(tmp_path / "adapter"))
 
     with pytest.raises(ValueError, match="MINIGPT_CHAT_MODEL_SOURCE"):
+        ChatServiceConfig.from_environment()
+
+
+def test_chat_environment_config_rejects_invalid_quantization(
+    monkeypatch, tmp_path: Path
+) -> None:
+    monkeypatch.setenv("MINIGPT_CHAT_MODEL_SOURCE", "Qwen/Qwen2.5-0.5B-Instruct")
+    monkeypatch.setenv("MINIGPT_CHAT_QUANTIZATION", "int3")
+
+    with pytest.raises(ValueError, match="quantization"):
         ChatServiceConfig.from_environment()

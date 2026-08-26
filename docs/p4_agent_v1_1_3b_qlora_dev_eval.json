@@ -1,0 +1,289 @@
+{
+  "validation": {
+    "ok": true,
+    "case_count": 100,
+    "counts": {
+      "direct_answer": 20,
+      "multi_step": 15,
+      "retrieval": 15,
+      "tool_arguments": 15,
+      "tool_selection": 35
+    },
+    "duplicates": [],
+    "count_errors": {},
+    "unexpected_categories": [],
+    "training_overlap": [],
+    "retrieval_errors": [],
+    "recall_failures": [],
+    "empty_user": [],
+    "manifest": {
+      "split": "dev",
+      "version": "agent-dev-v1",
+      "purpose": "Prompt, routing, data-design and failure-analysis development split.",
+      "frozen": false,
+      "fingerprint": "b61e5a51213dc377df7c8ed16e1507db81df800f74ad87eb662f37d90b45a1ee",
+      "review_status": "pending_owner_signoff",
+      "errors": []
+    }
+  },
+  "run": {
+    "model": "C:\\Users\\12183\\.cache\\huggingface\\hub\\models--Qwen--Qwen2.5-3B-Instruct\\snapshots\\aa8e72537993ba99e69dfaafa59ed015b17504d1",
+    "adapter_path": "D:\\mini-gpt-from-scratch\\hf_lora\\artifacts\\agent_v1_1_qwen2_5_3b_qlora\\adapter",
+    "device": "cuda",
+    "dtype": "float16",
+    "quantization": "4bit",
+    "routing": "heuristic",
+    "selected_cases": 100,
+    "predictions_written": 100,
+    "predictions_available": 100,
+    "predictions_output": "evals\\results\\p4_agent_v1_1_3b_qlora_dev_predictions.jsonl",
+    "generation": {
+      "max_new_tokens": 128,
+      "temperature": 0.7,
+      "greedy": true,
+      "seed": 42
+    }
+  },
+  "scoring": {
+    "ok": true,
+    "metrics": {
+      "cases_scored": 100,
+      "tool_selection_accuracy": 0.8615384615384616,
+      "json_valid_rate": 1.0,
+      "argument_accuracy": 0.8,
+      "task_success_rate": 0.78,
+      "single_tool_success_rate": 0.8,
+      "unnecessary_tool_rate": 0.0,
+      "multi_step_avg_calls": 1.2,
+      "retrieval_trigger_precision": 1.0,
+      "retrieval_trigger_recall": 0.6363636363636364,
+      "end_to_end_rag_recall_at_1": 0.6363636363636364,
+      "end_to_end_rag_recall_at_3": 0.6363636363636364,
+      "end_to_end_rag_recall_at_5": 0.6363636363636364,
+      "conditional_retrieval_recall_at_1": 1.0,
+      "conditional_retrieval_recall_at_3": 1.0,
+      "conditional_retrieval_recall_at_5": 1.0,
+      "rag_recall_at_5": 0.6363636363636364,
+      "baseline_rag_recall_at_5": 1.0,
+      "citation_accuracy": 0.6363636363636364,
+      "citation_precision": 0.7777777777777778,
+      "citation_recall": 0.6363636363636364,
+      "ungrounded_rate": 0.2727272727272727,
+      "unsupported_answer_rate": 0.2727272727272727,
+      "recovery_rate": 0.75,
+      "avg_duration_ms": 5348.77798,
+      "avg_generated_tokens": 34.17,
+      "targets": {
+        "json_valid_rate": 0.95,
+        "single_tool_success_rate": 0.85,
+        "unnecessary_tool_rate": 0.1,
+        "rag_recall_at_5": 0.85,
+        "recovery_rate": 0.7
+      }
+    },
+    "confidence_intervals": {
+      "tool_selection_accuracy": {
+        "point": 0.8615384615384616,
+        "lower": 0.7714285714285715,
+        "upper": 0.9394165535956581,
+        "confidence": 0.95,
+        "valid_samples": 1000,
+        "requested_samples": 1000
+      },
+      "json_valid_rate": {
+        "point": 1.0,
+        "lower": 1.0,
+        "upper": 1.0,
+        "confidence": 0.95,
+        "valid_samples": 1000,
+        "requested_samples": 1000
+      },
+      "argument_accuracy": {
+        "point": 0.8,
+        "lower": 0.6666666666666666,
+        "upper": 0.9211032388663968,
+        "confidence": 0.95,
+        "valid_samples": 1000,
+        "requested_samples": 1000
+      },
+      "task_success_rate": {
+        "point": 0.78,
+        "lower": 0.6997500000000002,
+        "upper": 0.86,
+        "confidence": 0.95,
+        "valid_samples": 1000,
+        "requested_samples": 1000
+      },
+      "single_tool_success_rate": {
+        "point": 0.8,
+        "lower": 0.6571428571428571,
+        "upper": 0.9269343986543314,
+        "confidence": 0.95,
+        "valid_samples": 1000,
+        "requested_samples": 1000
+      },
+      "unnecessary_tool_rate": {
+        "point": 0.0,
+        "lower": 0.0,
+        "upper": 0.0,
+        "confidence": 0.95,
+        "valid_samples": 1000,
+        "requested_samples": 1000
+      },
+      "retrieval_trigger_precision": {
+        "point": 1.0,
+        "lower": 1.0,
+        "upper": 1.0,
+        "confidence": 0.95,
+        "valid_samples": 1000,
+        "requested_samples": 1000
+      },
+      "retrieval_trigger_recall": {
+        "point": 0.6363636363636364,
+        "lower": 0.42105263157894735,
+        "upper": 0.8261244377811094,
+        "confidence": 0.95,
+        "valid_samples": 1000,
+        "requested_samples": 1000
+      },
+      "end_to_end_rag_recall_at_5": {
+        "point": 0.6363636363636364,
+        "lower": 0.42105263157894735,
+        "upper": 0.8261244377811094,
+        "confidence": 0.95,
+        "valid_samples": 1000,
+        "requested_samples": 1000
+      },
+      "conditional_retrieval_recall_at_5": {
+        "point": 1.0,
+        "lower": 1.0,
+        "upper": 1.0,
+        "confidence": 0.95,
+        "valid_samples": 1000,
+        "requested_samples": 1000
+      },
+      "citation_precision": {
+        "point": 0.7777777777777778,
+        "lower": 0.6069642857142858,
+        "upper": 1.0,
+        "confidence": 0.95,
+        "valid_samples": 1000,
+        "requested_samples": 1000
+      },
+      "citation_recall": {
+        "point": 0.6363636363636364,
+        "lower": 0.42105263157894735,
+        "upper": 0.8261244377811094,
+        "confidence": 0.95,
+        "valid_samples": 1000,
+        "requested_samples": 1000
+      },
+      "unsupported_answer_rate": {
+        "point": 0.2727272727272727,
+        "lower": 0.09090909090909091,
+        "upper": 0.4762422360248446,
+        "confidence": 0.95,
+        "valid_samples": 1000,
+        "requested_samples": 1000
+      },
+      "recovery_rate": {
+        "point": 0.75,
+        "lower": 0.0,
+        "upper": 1.0,
+        "confidence": 0.95,
+        "valid_samples": 982,
+        "requested_samples": 1000
+      }
+    },
+    "targets": {
+      "json_valid_rate": true,
+      "single_tool_success_rate": false,
+      "unnecessary_tool_rate": true,
+      "rag_recall_at_5": false,
+      "recovery_rate": true
+    },
+    "failure_analysis": {
+      "category_success": {
+        "direct_answer": {
+          "cases": 20,
+          "successes": 16,
+          "success_rate": 0.8
+        },
+        "multi_step": {
+          "cases": 15,
+          "successes": 13,
+          "success_rate": 0.8666666666666667
+        },
+        "retrieval": {
+          "cases": 15,
+          "successes": 7,
+          "success_rate": 0.4666666666666667
+        },
+        "tool_arguments": {
+          "cases": 15,
+          "successes": 12,
+          "success_rate": 0.8
+        },
+        "tool_selection": {
+          "cases": 35,
+          "successes": 30,
+          "success_rate": 0.8571428571428571
+        }
+      },
+      "failure_case_ids": {
+        "wrong_first_tool": [],
+        "missing_tool": [
+          "rt-003",
+          "rt-004",
+          "rt-006",
+          "rt-009",
+          "rt-011",
+          "rt-012",
+          "rt-013",
+          "rt-014"
+        ],
+        "unnecessary_tool": [],
+        "argument_mismatch": [
+          "ta-004",
+          "ta-007",
+          "ta-011",
+          "ts-003",
+          "ts-010",
+          "ts-011",
+          "ts-013",
+          "ts-016"
+        ],
+        "retrieval_miss": [
+          "rt-003",
+          "rt-004",
+          "rt-006",
+          "rt-009",
+          "rt-011",
+          "rt-012",
+          "rt-013",
+          "rt-014"
+        ],
+        "citation_miss": [
+          "rt-003",
+          "rt-004",
+          "rt-006",
+          "rt-009",
+          "rt-011",
+          "rt-012",
+          "rt-013",
+          "rt-014"
+        ],
+        "recovery_failure": [
+          "ms-013"
+        ],
+        "runtime_error": []
+      },
+      "finish_reason_counts": {
+        "stop": 100
+      }
+    },
+    "missing_predictions": [],
+    "duplicate_predictions": [],
+    "unknown_predictions": []
+  }
+}

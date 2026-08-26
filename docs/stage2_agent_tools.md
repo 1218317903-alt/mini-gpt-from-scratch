@@ -1,4 +1,4 @@
-# 阶段二：工具调用与最小 Agent 循环
+# 阶段三：工具调用与最小 Agent 循环
 
 ## 目标
 
@@ -12,9 +12,16 @@
 - `ToolExecutor` 参数校验、异常标准化、超时和执行耗时记录。
 - 安全计算器：只允许数字和基本算术运算，不执行 Python、Shell 或函数调用。
 - `current_time`：按 IANA 时区返回 ISO-8601 时间。
+- `search_docs`：只读检索固定本地文档目录，返回带 citation 的 Top-5 片段。
 - `ChatModelAgentAdapter`：把普通聊天模型输出解析为严格 JSON 工具调用。
-- `AgentOrchestrator`：最多 6 轮模型/工具循环，保存每次工具执行轨迹。
-- `POST /agent/chat`：返回最终答案、循环步数、工具次数和工具执行 trace。
+- `AgentOrchestrator`：默认最多 6 轮、硬上限 8 轮；成功调用不允许原样重复，失败调用
+  最多允许一次同参数恢复重试，随后阻断循环。
+- `AgentContext`：管理本次请求的消息和重复调用签名。
+- `AgentTracer`：记录每个模型/工具步骤的输入、输出、耗时和错误，并对密码、Token、
+  API Key 等常见敏感字段脱敏。
+- 副作用工具默认不执行；返回与工具名和参数绑定的 `confirmation_id`。调用方明确把该
+  ID 放入 `approved_side_effects` 后才允许执行。
+- `POST /agent/chat`：返回最终答案、循环步数、工具次数、工具 trace 和完整脱敏 events。
 
 模型请求工具时使用以下协议：
 
@@ -48,13 +55,13 @@ Invoke-RestMethod http://127.0.0.1:8000/agent/chat `
 
 ## 安全边界
 
-当前默认注册表只包含 `calculator` 和 `current_time`，不包含任意命令执行、任意文件
-读写、网络访问或发送消息工具。后续增加有副作用的工具时，需要额外的权限和用户确认
-层，不能只依赖模型 Prompt。
+当前默认注册表只包含 `calculator`、`current_time` 和只读 `search_docs`，不包含任意
+命令执行、任意 Python、文件写入、网络访问或发送消息工具。副作用确认由执行器强制
+实施，不依赖模型 Prompt。
 
 ## 验收
 
 - 工具、解析器、编排器和 Agent API 单元测试覆盖正常调用、非法参数、未知工具、超时、
   多轮恢复和最大轮数限制。
-- 当前完整测试为 129 项通过，包含 `agent` 的总分支覆盖率为 67.89%；Ruff 和 Mypy 均通过。
-- 阶段二暂不包含 RAG、长期记忆、流式输出或多 Agent 协作。
+- 本阶段不包含长期记忆、流式输出或多 Agent 协作；文档检索是便于理解和测试的词法
+  基线，不是生产级向量 RAG。

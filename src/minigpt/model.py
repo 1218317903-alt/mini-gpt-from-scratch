@@ -79,6 +79,31 @@ class PositionEmbedding(nn.Module):
         return hidden_states + position_vectors
 
 
+class RMSNorm(nn.Module):
+    """只按均方根缩放的归一化，不减去均值。"""
+
+    def __init__(self, embedding_dim: int, epsilon: float = 1e-6) -> None:
+        super().__init__()
+        if type(embedding_dim) is not int or embedding_dim <= 0:
+            raise ValueError("embedding_dim 必须是正整数。")
+        if epsilon <= 0:
+            raise ValueError("epsilon 必须大于 0。")
+        self.embedding_dim = embedding_dim
+        self.epsilon = float(epsilon)
+        self.weight = nn.Parameter(torch.ones(embedding_dim))
+
+    def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
+        if hidden_states.ndim != 3:
+            raise ValueError("hidden_states 必须是 [B,T,C]。")
+        if hidden_states.size(-1) != self.embedding_dim:
+            raise ValueError("输入最后一维必须等于 embedding_dim。")
+        variance = hidden_states.float().pow(2).mean(dim=-1, keepdim=True)
+        normalized = hidden_states * torch.rsqrt(variance + self.epsilon).to(
+            hidden_states.dtype
+        )
+        return normalized * self.weight
+
+
 class FeedForward(nn.Module):
     """Transformer Block 中的两层前馈网络。"""
 
@@ -87,6 +112,7 @@ class FeedForward(nn.Module):
         embedding_dim: int,
         expansion_factor: int = 4,
         dropout: float = 0.0,
+        activation: str = "gelu",
     ) -> None:
         super().__init__()
         if type(embedding_dim) is not int or embedding_dim <= 0:
@@ -97,17 +123,53 @@ class FeedForward(nn.Module):
             raise TypeError("dropout 必须是数字。")
         if not 0.0 <= float(dropout) < 1.0:
             raise ValueError("dropout 必须位于 [0, 1) 中。")
+        if activation not in {"gelu", "swiglu"}:
+            raise ValueError("activation 必须是 gelu 或 swiglu。")
 
         hidden_dim = embedding_dim * expansion_factor
-        self.fc_in = nn.Linear(embedding_dim, hidden_dim)
-        self.activation = nn.GELU()
-        self.fc_out = nn.Linear(hidden_dim, embedding_dim)
+        self.activation_name = activation
+        self.fc_in: nn.Linear | None
+        self.fc_out: nn.Linear | None
+        self.gate_proj: nn.Linear | None
+        self.up_proj: nn.Linear | None
+        self.down_proj: nn.Linear | None
+        if activation == "gelu":
+            self.fc_in = nn.Linear(embedding_dim, hidden_dim)
+            self.fc_out = nn.Linear(hidden_dim, embedding_dim)
+            self.gate_proj = None
+            self.up_proj = None
+            self.down_proj = None
+        else:
+            self.fc_in = None
+            self.fc_out = None
+            self.gate_proj = nn.Linear(embedding_dim, hidden_dim, bias=False)
+            self.up_proj = nn.Linear(embedding_dim, hidden_dim, bias=False)
+            self.down_proj = nn.Linear(hidden_dim, embedding_dim, bias=False)
         self.dropout = nn.Dropout(float(dropout))
 
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         if hidden_states.ndim != 3:
             raise ValueError("hidden_states 必须是 [B,T,C]。")
-        return self.dropout(self.fc_out(self.activation(self.fc_in(hidden_states))))
+        if self.activation_name == "gelu":
+            assert self.fc_in is not None and self.fc_out is not None
+            output = self.fc_out(torch.nn.functional.gelu(self.fc_in(hidden_states)))
+        else:
+            assert self.gate_proj is not None
+            assert self.up_proj is not None
+            assert self.down_proj is not None
+            output = self.down_proj(
+                torch.nn.functional.silu(self.gate_proj(hidden_states))
+                * self.up_proj(hidden_states)
+            )
+        return self.dropout(output)
+
+
+def _build_norm(norm: str, embedding_dim: int) -> nn.Module:
+    if norm == "layernorm":
+        return nn.LayerNorm(embedding_dim)
+    if norm == "rmsnorm":
+        return RMSNorm(embedding_dim)
+    raise ValueError("norm 必须是 layernorm 或 rmsnorm。")
 
 
 class TransformerBlock(nn.Module):
@@ -120,20 +182,29 @@ class TransformerBlock(nn.Module):
         block_size: int,
         expansion_factor: int = 4,
         dropout: float = 0.0,
+        position_encoding: str = "learned",
+        norm: str = "layernorm",
+        activation: str = "gelu",
+        attention_backend: str = "manual",
+        qkv_projection: str = "separate",
     ) -> None:
         super().__init__()
-        self.layer_norm_1 = nn.LayerNorm(embedding_dim)
+        self.layer_norm_1 = _build_norm(norm, embedding_dim)
         self.attention = MultiHeadCausalSelfAttention(
             embedding_dim=embedding_dim,
             num_heads=num_heads,
             block_size=block_size,
             dropout=dropout,
+            attention_backend=attention_backend,
+            qkv_projection=qkv_projection,
+            position_encoding=position_encoding,
         )
-        self.layer_norm_2 = nn.LayerNorm(embedding_dim)
+        self.layer_norm_2 = _build_norm(norm, embedding_dim)
         self.feed_forward = FeedForward(
             embedding_dim=embedding_dim,
             expansion_factor=expansion_factor,
             dropout=dropout,
+            activation=activation,
         )
 
     def forward(
@@ -229,6 +300,11 @@ class MiniGPT(nn.Module):
         expansion_factor: int = 4,
         tie_weights: bool = False,
         dropout: float = 0.0,
+        position_encoding: str = "learned",
+        norm: str = "layernorm",
+        activation: str = "gelu",
+        attention_backend: str = "manual",
+        qkv_projection: str = "separate",
     ) -> None:
         super().__init__()
 
@@ -248,6 +324,16 @@ class MiniGPT(nn.Module):
             raise TypeError("dropout 必须是数字。")
         if not 0.0 <= float(dropout) < 1.0:
             raise ValueError("dropout 必须位于 [0, 1) 中。")
+        choices = {
+            "position_encoding": (position_encoding, {"learned", "rope"}),
+            "norm": (norm, {"layernorm", "rmsnorm"}),
+            "activation": (activation, {"gelu", "swiglu"}),
+            "attention_backend": (attention_backend, {"manual", "sdpa"}),
+            "qkv_projection": (qkv_projection, {"separate", "fused"}),
+        }
+        for name, (value, allowed) in choices.items():
+            if value not in allowed:
+                raise ValueError(f"{name} 的值无效：{value}。")
 
         self.vocab_size = vocab_size
         self.block_size = block_size
@@ -256,14 +342,20 @@ class MiniGPT(nn.Module):
         self.num_layers = num_layers
         self.expansion_factor = expansion_factor
         self.dropout_probability = float(dropout)
+        self.position_encoding_name = position_encoding
+        self.norm_name = norm
+        self.activation_name = activation
+        self.attention_backend = attention_backend
+        self.qkv_projection_name = qkv_projection
 
         self.token_embedding = TokenEmbedding(
             vocab_size,
             embedding_dim,
         )
-        self.position_embedding = PositionEmbedding(
-            block_size,
-            embedding_dim,
+        self.position_embedding = (
+            PositionEmbedding(block_size, embedding_dim)
+            if position_encoding == "learned"
+            else None
         )
         self.blocks = nn.ModuleList(
             [
@@ -273,11 +365,16 @@ class MiniGPT(nn.Module):
                     block_size=block_size,
                     expansion_factor=expansion_factor,
                     dropout=self.dropout_probability,
+                    position_encoding=position_encoding,
+                    norm=norm,
+                    activation=activation,
+                    attention_backend=attention_backend,
+                    qkv_projection=qkv_projection,
                 )
                 for _ in range(num_layers)
             ]
         )
-        self.final_layer_norm = nn.LayerNorm(embedding_dim)
+        self.final_layer_norm = _build_norm(norm, embedding_dim)
         self.lm_head = LanguageModelHead(embedding_dim, vocab_size)
 
         self.apply(self._init_weights)
@@ -297,6 +394,8 @@ class MiniGPT(nn.Module):
         elif isinstance(module, nn.LayerNorm):
             nn.init.ones_(module.weight)
             nn.init.zeros_(module.bias)
+        elif isinstance(module, RMSNorm):
+            nn.init.ones_(module.weight)
 
     def forward(
         self,
@@ -336,10 +435,11 @@ class MiniGPT(nn.Module):
             raise ValueError("缓存长度与当前输入之和超过 block_size。")
 
         hidden_states = self.token_embedding(token_ids)
-        hidden_states = self.position_embedding(
-            hidden_states,
-            position_offset=past_length,
-        )
+        if self.position_embedding is not None:
+            hidden_states = self.position_embedding(
+                hidden_states,
+                position_offset=past_length,
+            )
 
         attention_weights: list[torch.Tensor] = []
         present_key_values: list[KVCache] = []

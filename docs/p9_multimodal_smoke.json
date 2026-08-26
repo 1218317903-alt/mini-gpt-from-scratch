@@ -1,0 +1,36 @@
+{
+  "date": "2026-08-25",
+  "author": "李林知",
+  "status": "real_local_model_smoke",
+  "expected_ocr": "MINIGPT P9 TEST",
+  "actual_ocr": "MINIGPT P9 TEST",
+  "ocr_character_error_rate": 0.0,
+  "expected_asr": "Mini GPT multimodal test",
+  "actual_asr": "MiniGPT Multimodo Test",
+  "asr_character_error_rate": 0.09523809523809523,
+  "tts": {
+    "filename": "p9_tts_output.wav",
+    "bytes": 140666,
+    "duration_seconds": 3.1886621315192745,
+    "sample_rate": 22050,
+    "validated": true
+  },
+  "cold_latency_ms": {
+    "ocr": 13916.508299997076,
+    "tts": 525.1033000022289,
+    "asr": 6528.43070000381
+  },
+  "warm_latency_ms": {
+    "ocr": 75.56369999656454,
+    "asr": 74.09329999791225
+  },
+  "model_cache_bytes": 402641299,
+  "model_cache_mib": 383.9886655807495,
+  "workspace": "D:\\mini-gpt-from-scratch\\output\\multimodal",
+  "limitations": [
+    "OCR 只验证单行印刷体图片，不代表复杂截图、表格或扫描件能力。",
+    "ASR 只验证操作系统 TTS 合成的短英文，不能替代真实噪声语音 WER。",
+    "首次运行包含模型下载和加载时间，后续热路径应单独测量。",
+    "P9 采用 OCR/ASR/LLM/TTS 级联，不是端到端多模态联合训练。"
+  ]
+}

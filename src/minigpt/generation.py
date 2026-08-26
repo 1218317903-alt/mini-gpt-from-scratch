@@ -256,12 +256,15 @@ def _validate_probability_matrix(
 
 def sample_next_token(
     probabilities: torch.Tensor,
+    *,
+    generator: torch.Generator | None = None,
 ) -> torch.Tensor:
     """Sample one Token ID per batch row from ``[B, V]`` probabilities."""
     _validate_probability_matrix(probabilities)
     return torch.multinomial(
         probabilities,
         num_samples=1,
+        generator=generator,
     ).squeeze(-1)
 
 
@@ -338,6 +341,7 @@ def _select_next_token(
     temperature: float,
     top_k: int | None,
     top_p: float | None,
+    generator: torch.Generator | None,
 ) -> torch.Tensor:
     """Use the configured decoding policy for one ``[B,V]`` matrix."""
     if not do_sample:
@@ -347,6 +351,7 @@ def _select_next_token(
     filtered_logits = apply_top_p(filtered_logits, top_p)
     return sample_next_token(
         logits_to_probabilities(filtered_logits),
+        generator=generator,
     )
 
 
@@ -360,6 +365,7 @@ def _generate_without_cache(
     temperature: float,
     top_k: int | None,
     top_p: float | None,
+    generator: torch.Generator | None,
 ) -> torch.Tensor:
     """Baseline generation that recomputes the visible context each step."""
     for _ in range(max_new_tokens):
@@ -371,6 +377,7 @@ def _generate_without_cache(
             temperature=temperature,
             top_k=top_k,
             top_p=top_p,
+            generator=generator,
         )
         generated = torch.cat(
             (generated, next_token.unsqueeze(1)),
@@ -389,6 +396,7 @@ def _generate_with_cache(
     temperature: float,
     top_k: int | None,
     top_p: float | None,
+    generator: torch.Generator | None,
 ) -> torch.Tensor:
     """Generate by one Prompt prefill followed by one-Token decode steps."""
     total_length = generated.size(1) + max_new_tokens
@@ -405,6 +413,7 @@ def _generate_with_cache(
             temperature=temperature,
             top_k=top_k,
             top_p=top_p,
+            generator=generator,
         )
         generated = torch.cat(
             (generated, next_token.unsqueeze(1)),
@@ -430,6 +439,7 @@ def generate(
     top_k: int | None = None,
     top_p: float | None = None,
     use_kv_cache: bool = False,
+    generator: torch.Generator | None = None,
 ) -> torch.Tensor:
     """Generate a sequence containing the prompt and new Token IDs."""
     _validate_model_input(model, input_ids)
@@ -464,6 +474,7 @@ def generate(
                 temperature=temperature,
                 top_k=top_k,
                 top_p=top_p,
+                generator=generator,
             )
         return _generate_without_cache(
             model,
@@ -474,4 +485,5 @@ def generate(
             temperature=temperature,
             top_k=top_k,
             top_p=top_p,
+            generator=generator,
         )

@@ -20,7 +20,7 @@ def test_create_app_returns_configured_fastapi_application() -> None:
 
     assert isinstance(created_app, FastAPI)
     assert created_app.title == SERVICE_NAME
-    assert created_app.version == "0.2.0"
+    assert created_app.version == "0.5.0"
 
 
 def test_create_app_returns_independent_instances() -> None:
@@ -73,6 +73,9 @@ def test_openapi_schema_exposes_service_metadata() -> None:
     assert "/generate" in schema["paths"]
     assert "/chat" in schema["paths"]
     assert "/agent/chat" in schema["paths"]
+    assert "/agent/chat/stream" in schema["paths"]
+    assert "/agent/cancel/{run_id}" in schema["paths"]
+    assert "/agent/metrics" in schema["paths"]
 
 
 class _FakeModelService:
@@ -227,6 +230,53 @@ def test_agent_route_returns_service_unavailable_without_agent() -> None:
         assert error.status_code == 503
     else:
         raise AssertionError("Expected /agent/chat to reject an unavailable agent")
+
+
+def test_agent_sse_stream_emits_start_and_result_events() -> None:
+    service_app = create_app(agent=_FakeAgent())  # type: ignore[arg-type]
+
+    with TestClient(service_app) as client:
+        response = client.post(
+            "/agent/chat/stream",
+            headers={"X-Request-ID": "stream-123"},
+            json={"messages": [{"role": "user", "content": "17乘以6？"}]},
+        )
+
+    assert response.status_code == 200
+    assert "event: start" in response.text
+    assert "event: result" in response.text
+    assert "stream-123" in response.text
+
+
+def test_agent_metrics_and_unknown_cancellation_are_observable() -> None:
+    service_app = create_app(agent=_FakeAgent())  # type: ignore[arg-type]
+
+    with TestClient(service_app) as client:
+        response = client.post(
+            "/agent/chat",
+            json={"messages": [{"role": "user", "content": "hello"}]},
+        )
+        metrics = client.get("/agent/metrics")
+        cancellation = client.post("/agent/cancel/missing")
+
+    assert response.status_code == 200
+    assert metrics.json()["completed"] == 1
+    assert metrics.json()["running"] == 0
+    assert cancellation.json() == {
+        "run_id": "missing",
+        "cancellation_requested": False,
+    }
+
+
+def test_demo_page_exposes_local_observable_agent_ui() -> None:
+    service_app = create_app()
+
+    with TestClient(service_app) as client:
+        response = client.get("/demo")
+
+    assert response.status_code == 200
+    assert "MiniGPT 可观测 Agent" in response.text
+    assert "/agent/chat/stream" in response.text
 
 
 def test_request_id_is_propagated_and_structured_request_is_logged(caplog) -> None:

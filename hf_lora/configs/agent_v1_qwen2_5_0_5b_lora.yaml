@@ -1,0 +1,42 @@
+model:
+  name: Qwen/Qwen2.5-0.5B-Instruct
+  dtype: float16
+  quantization: none
+  max_length: 640
+
+lora:
+  rank: 16
+  alpha: 32
+  dropout: 0.05
+  target_modules: [q_proj, k_proj, v_proj, o_proj]
+
+training:
+  seed: 20260825
+  micro_batch_size: 1
+  gradient_accumulation_steps: 8
+  max_optimizer_steps: 100
+  learning_rate: 0.0002
+  weight_decay: 0.0
+  warmup_steps: 5
+  minimum_lr_ratio: 0.1
+  max_grad_norm: 1.0
+  eval_interval: 50
+  scaler_initial_scale: 256
+
+paths:
+  train_data: hf_lora/data/agent_v1/train.jsonl
+  validation_data: hf_lora/data/agent_v1/validation.jsonl
+  artifact_directory: hf_lora/artifacts/agent_v1_1_qwen2_5_0_5b_lora
+
+generation:
+  max_new_tokens: 96
+  prompts:
+    - category: calculator_tool_call
+      system: 需要工具时，只输出 {"tool_call":{"name":"tool_name","arguments":{}}} 格式的 JSON。
+      user: 请用计算器精确计算 913 乘以 47。
+    - category: retrieval_tool_call
+      system: 需要工具时，只输出 {"tool_call":{"name":"tool_name","arguments":{}}} 格式的 JSON。
+      user: 请查内部资料：星屿项目9999由哪个团队负责？
+    - category: direct_answer
+      system: 可以直接回答时不要调用工具。
+      user: 面试中怎样简洁说明数据污染？

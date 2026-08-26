@@ -1,0 +1,32 @@
+{
+  "case_count_range": [
+    100,
+    100
+  ],
+  "case_files": {
+    "direct_answer.jsonl": "a46a4627a2dd61a7086eda11b96e2226cd1500e814ba94d28737a01ee9d9f6d2",
+    "multi_step.jsonl": "5872660068b8ac4cfe5a920bbcee0934a4fc620ed634c240cf32ea046b10fcf8",
+    "retrieval.jsonl": "f85e983e24ce6e518db4c69a34b143946780367827acc39abfb8e48fdea0cce2",
+    "tool_arguments.jsonl": "f7459503247d6a9dbc4a7e5d743d404f0b880d173521fe8803b457ee837e0738",
+    "tool_selection.jsonl": "c8d29952fd5d82b3a7227a90205aefa31ad0330a9e04e228cf4950394828baa9"
+  },
+  "expected_counts": {
+    "direct_answer": 20,
+    "multi_step": 15,
+    "retrieval": 15,
+    "tool_arguments": 15,
+    "tool_selection": 35
+  },
+  "fingerprint": "b61e5a51213dc377df7c8ed16e1507db81df800f74ad87eb662f37d90b45a1ee",
+  "frozen": false,
+  "provenance": "Existing 100-case stage-two evaluation reclassified as dev after its failures were inspected.",
+  "purpose": "Prompt, routing, data-design and failure-analysis development split.",
+  "review": {
+    "reviewer": null,
+    "signed_at": null,
+    "status": "pending_owner_signoff"
+  },
+  "schema_version": 1,
+  "split": "dev",
+  "version": "agent-dev-v1"
+}

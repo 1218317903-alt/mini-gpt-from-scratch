@@ -1,27 +1,43 @@
-# 阶段一：真实聊天模型后端验收
+# 阶段一：真实聊天模型后端审查
 
-验收日期：2026-08-19
+审查日期：2026-08-20
+
+当前状态：**0.5B 路线的代码、Adapter 恢复和本机硬件实测已完成；3B/4-bit 路线尚未
+实测。**
 
 ## 目标
 
-把阶段六的 Hugging Face Instruct 模型接入阶段八 FastAPI 服务，同时保留手写
-MiniGPT 的 `/generate` 路径。两个后端通过统一的聊天接口和生命周期管理运行，便于
-后续加入工具调用、RAG 和会话记忆。
+把真实 Instruct 模型接入服务，同时保留手写 MiniGPT 的 `/generate` 路径。Agent
+不再关心底层是字符级 MiniGPT、原始 Hugging Face 模型还是 LoRA Adapter。
+
+统一接口位于 `src/agent/`：
+
+```text
+src/agent/
+├── llm/
+│   ├── base.py
+│   ├── minigpt_backend.py
+│   └── huggingface_backend.py
+└── messages.py
+```
+
+`ChatModel.chat(messages, tools=None, ...)` 接受 `system` / `user` /
+`assistant` / `tool` 四种角色，并返回文本、可选工具调用、Token 统计和生成耗时。
 
 ## 已实现
 
-- `ChatMessage`、`ChatRequest`、`ChatResponse` 请求/响应契约。
-- `ChatModel` Protocol 和 `ChatResult` 后端无关结果结构。
-- `HuggingFaceChatModel`：Tokenizer Chat Template、基座模型、可选 PEFT LoRA Adapter。
-- `float16`、`bfloat16`、`float32` 推理类型，以及 `cpu/cuda/mps/auto` 设备选择。
-- EOS/长度停止原因、Prompt/生成 Token 统计、温度、Top-k、Top-p、Greedy 和 seed。
-- 输入 Token 预算和模型上下文窗口校验。
-- `POST /chat`，同时保留 `POST /generate`。
-- 环境变量创建聊天后端：`MINIGPT_CHAT_*`。
+- 后端无关的 `Message`、`ToolSchema`、`ChatModel` 和 `ChatResult`。
+- `HuggingFaceChatModel`：Chat Template、基座模型、可选 PEFT LoRA Adapter。
+- `MiniGPTChatModel`：把字符级 MiniGPT 接到同一套 `/chat` 与 Agent 接口。
+- `float16` / `bfloat16` / `float32`，以及可选 `4bit` / `8bit` 量化推理。
+- EOS / `<|im_end|>` 停止、输入 Token 预算、上下文窗口校验。
+- Prompt / 生成 Token 数和 `duration_ms`。
+- `POST /chat` 直接接收多轮消息，不再要求调用方拼接 Prompt。
+- 模型分两条线：
+  - `Qwen2.5-0.5B-Instruct`：CI、接口测试和快速实验。
+  - `Qwen2.5-3B-Instruct` + 4-bit：8GB 显存上的本地实用 Agent 主模型。
 
 ## 启动配置
-
-使用 Hugging Face 模型时设置：
 
 ```powershell
 $env:MINIGPT_CHAT_MODEL_SOURCE = "Qwen/Qwen2.5-0.5B-Instruct"
@@ -32,40 +48,41 @@ $env:MINIGPT_DEVICE = "cpu"
 uv run uvicorn minigpt_service.app:app --host 127.0.0.1 --port 8000
 ```
 
-不设置 `MINIGPT_CHAT_MODEL_SOURCE` 时，服务仍可以只启动手写 MiniGPT 或健康检查
-模式。基座模型和 Adapter 可分别配置；Adapter 由全新基座加载后恢复，避免依赖训练
-进程中的模型对象。
-
-## 接口示例
+8GB 显存上的本地主模型：
 
 ```powershell
-$body = @{
-  messages = @(
-    @{ role = "system"; content = "你是一个简洁准确的助手。" },
-    @{ role = "user"; content = "17乘以6等于多少？" }
-  )
-  max_new_tokens = 32
-  greedy = $true
-  seed = 42
-} | ConvertTo-Json -Depth 5
-
-Invoke-RestMethod http://127.0.0.1:8000/chat `
-  -Method Post -ContentType "application/json" -Body $body
+$env:MINIGPT_CHAT_MODEL_SOURCE = "Qwen/Qwen2.5-3B-Instruct"
+$env:MINIGPT_CHAT_DTYPE = "float16"
+$env:MINIGPT_CHAT_QUANTIZATION = "4bit"
+$env:MINIGPT_DEVICE = "cuda"
 ```
 
-## 验收结果
+配置说明见 `configs/chat_models.yaml`。不设置 `MINIGPT_CHAT_MODEL_SOURCE` 但提供
+MiniGPT Checkpoint 时，`/chat` 和 Agent 会走 `MiniGPTChatModel`。
 
-本机已有环境按锁文件升级后，版本为 FastAPI 0.141.1、Uvicorn 0.52.3、PyTorch
-2.13.0+cu126、Transformers 5.15.0、PEFT 0.20.0、Datasets 4.8.5。
+## 基准
 
-- 阶段一新增聊天、配置和 HTTP 测试：43 passed。
-- 完整测试：108 passed，分支覆盖率 64.62%；Ruff 和 Mypy 均通过。
-- Qwen2.5-0.5B-Instruct 使用 Hugging Face 本地缓存离线加载成功。
-- LoRA Adapter 使用仓库现有 `hf_lora/artifacts/.../adapter` 离线恢复成功。
-- `/health`、`/ready`、`/chat` 真实 TestClient 请求均返回 200。
-- 多轮消息能够传入同一个 Chat Template 上下文，第二轮算术回答返回 `102`。
+```powershell
+$env:MINIGPT_CHAT_MODEL_SOURCE = "Qwen/Qwen2.5-0.5B-Instruct"
+$env:MINIGPT_CHAT_LOCAL_FILES_ONLY = "true"
+uv run python scripts/benchmark_chat.py --output docs/stage1_chat_benchmark.json
+```
 
-## 当前边界
+记录项：加载耗时、首 Token 延迟（`max_new_tokens=1`）、短补全耗时、峰值显存。
 
-阶段一只解决“真实聊天模型接入服务”，还没有 Agent 工具循环、RAG、长期记忆、流式
-输出或权限确认。这些功能分别在后续阶段实现。
+## 验收状态
+
+- Adapter 保存、全新基座恢复及 logits 一致性检查已实现在
+  `hf_lora/scripts/train_and_compare.py`。本机产物的最大 logits 差为 `0.0`，且三条固定
+  Prompt 的 `after` 与 `restored` 文本完全一致。
+- `/chat` 会把完整三轮上下文送入 Chat Template。
+- 模型输出可解析为合法工具 JSON。
+- Token 数和生成耗时随 `/chat` 返回。
+
+2026-08-20 本机 0.5B + LoRA + CUDA FP32 实测：加载 `3677.046 ms`，首个生成 Token
+调用 `278.112 ms`，短补全 `140.367 ms`，峰值显存 `1920.75 MiB`。真实模型同时输出
+了可解析的 `calculator` JSON 调用，参数为 `{"expression": "17*6"}`。完整机器可读
+记录见 `stage1_chat_benchmark.json`。
+
+待完成：3B/4-bit 配置尚未在本机实测（本机没有该模型缓存，本次审查没有下载模型）。
+流式输出仍是可选项，不阻塞本阶段核心验收。

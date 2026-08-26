@@ -2,13 +2,15 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
 from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any, Literal
 
 from pydantic import BaseModel
 
-ToolStatus = Literal["ok", "error"]
+ToolStatus = Literal["ok", "error", "confirmation_required"]
 
 
 @dataclass(frozen=True)
@@ -46,6 +48,8 @@ class ToolExecutionResult:
     status: ToolStatus
     content: str
     duration_ms: float
+    confirmation_id: str | None = None
+    attempts: int = 1
 
 
 @dataclass(frozen=True)
@@ -74,3 +78,15 @@ class ToolSpec:
             description=self.description,
             parameters=self.arguments_model.model_json_schema(),
         )
+
+
+def tool_confirmation_id(call: ToolCall) -> str:
+    """Return a stable approval token bound to a tool name and its arguments."""
+    payload = json.dumps(
+        {"name": call.name, "arguments": call.arguments},
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+        default=str,
+    ).encode("utf-8")
+    return "tool_" + hashlib.sha256(payload).hexdigest()[:24]

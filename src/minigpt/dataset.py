@@ -56,3 +56,56 @@ class CharacterLanguageModelDataset(Dataset[tuple[torch.Tensor, torch.Tensor]]):
 
 # 保留旧名称，避免已有脚本立刻失效。
 CausalLanguageModelingDataset = CharacterLanguageModelDataset
+
+
+class PackedLanguageModelDataset(Dataset[tuple[torch.Tensor, torch.Tensor]]):
+    """把多个变长样本用 EOS 拼成固定长度块，尾部目标用 -100 屏蔽。"""
+
+    def __init__(
+        self,
+        sequences: list[list[int]],
+        block_size: int,
+        *,
+        eos_id: int,
+        pad_id: int,
+    ) -> None:
+        if not sequences or any(not item for item in sequences):
+            raise ValueError("sequences 必须包含非空 Token 序列。")
+        if type(block_size) is not int or block_size <= 0:
+            raise ValueError("block_size 必须是正整数。")
+        if type(eos_id) is not int or eos_id < 0:
+            raise ValueError("eos_id 必须是非负整数。")
+        if type(pad_id) is not int or pad_id < 0:
+            raise ValueError("pad_id 必须是非负整数。")
+
+        stream: list[int] = []
+        for sequence in sequences:
+            stream.extend(sequence)
+            stream.append(eos_id)
+        self.blocks: list[tuple[torch.Tensor, torch.Tensor]] = []
+        stride = block_size + 1
+        for start in range(0, len(stream) - 1, block_size):
+            window = stream[start : start + stride]
+            valid_targets = max(0, len(window) - 1)
+            if len(window) < stride:
+                window.extend([pad_id] * (stride - len(window)))
+            inputs = torch.tensor(window[:-1], dtype=torch.long)
+            targets = torch.tensor(window[1:], dtype=torch.long)
+            if valid_targets < block_size:
+                targets[valid_targets:] = -100
+            self.blocks.append((inputs, targets))
+
+    def __len__(self) -> int:
+        return len(self.blocks)
+
+    def __getitem__(self, index: int) -> tuple[torch.Tensor, torch.Tensor]:
+        if type(index) is not int:
+            raise TypeError("index 必须是 int。")
+        return self.blocks[index]
+
+    @property
+    def utilization(self) -> float:
+        """返回非 padding 目标 Token 占总槽位的比例。"""
+        valid = sum(int((targets != -100).sum()) for _, targets in self.blocks)
+        total = sum(targets.numel() for _, targets in self.blocks)
+        return valid / total

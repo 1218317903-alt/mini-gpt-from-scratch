@@ -1,0 +1,174 @@
+{
+  "date": "2026-08-25",
+  "author": "李林知",
+  "status": "controlled_fixed_batch_short_budget",
+  "device": "cuda",
+  "torch_version": "2.13.0+cu126",
+  "controlled_budget": {
+    "seed": 42,
+    "batch_size": 16,
+    "block_size": 64,
+    "steps": 300,
+    "architecture_embedding_dim": 128,
+    "architecture_layers": 4,
+    "architecture_heads": 4
+  },
+  "architecture_results": [
+    {
+      "variant": {
+        "name": "classic",
+        "position_encoding": "learned",
+        "norm": "layernorm",
+        "activation": "gelu",
+        "attention_backend": "manual",
+        "qkv_projection": "separate"
+      },
+      "parameters": 818432,
+      "steps": 300,
+      "processed_tokens": 307200,
+      "train_loss_last": 0.02510954812169075,
+      "validation_loss_initial": 4.222295761108398,
+      "validation_loss_final": 5.29341983795166,
+      "validation_bpb_final": 7.636790549556121,
+      "elapsed_seconds": 3.2705729999943287,
+      "tokens_per_second": 93928.49509872818,
+      "peak_memory_mib": 65.7548828125
+    },
+    {
+      "variant": {
+        "name": "rope_only",
+        "position_encoding": "rope",
+        "norm": "layernorm",
+        "activation": "gelu",
+        "attention_backend": "manual",
+        "qkv_projection": "separate"
+      },
+      "parameters": 810240,
+      "steps": 300,
+      "processed_tokens": 307200,
+      "train_loss_last": 0.033162929117679596,
+      "validation_loss_initial": 4.257268905639648,
+      "validation_loss_final": 4.926980495452881,
+      "validation_bpb_final": 7.10813032734652,
+      "elapsed_seconds": 4.265632499998901,
+      "tokens_per_second": 72017.45579350287,
+      "peak_memory_mib": 65.69189453125
+    },
+    {
+      "variant": {
+        "name": "rmsnorm_only",
+        "position_encoding": "learned",
+        "norm": "rmsnorm",
+        "activation": "gelu",
+        "attention_backend": "manual",
+        "qkv_projection": "separate"
+      },
+      "parameters": 817280,
+      "steps": 300,
+      "processed_tokens": 307200,
+      "train_loss_last": 0.025230150669813156,
+      "validation_loss_initial": 4.2134809494018555,
+      "validation_loss_final": 5.273111343383789,
+      "validation_bpb_final": 7.607491585155133,
+      "elapsed_seconds": 3.7362467999992077,
+      "tokens_per_second": 82221.54917605153,
+      "peak_memory_mib": 69.7099609375
+    },
+    {
+      "variant": {
+        "name": "swiglu_only",
+        "position_encoding": "learned",
+        "norm": "layernorm",
+        "activation": "swiglu",
+        "attention_backend": "manual",
+        "qkv_projection": "separate"
+      },
+      "parameters": 1078016,
+      "steps": 300,
+      "processed_tokens": 307200,
+      "train_loss_last": 0.025474248453974724,
+      "validation_loss_initial": 4.20121955871582,
+      "validation_loss_final": 5.536667823791504,
+      "validation_bpb_final": 7.987723212433492,
+      "elapsed_seconds": 3.216753000000608,
+      "tokens_per_second": 95500.0275121969,
+      "peak_memory_mib": 85.724609375
+    },
+    {
+      "variant": {
+        "name": "sdpa_only",
+        "position_encoding": "learned",
+        "norm": "layernorm",
+        "activation": "gelu",
+        "attention_backend": "sdpa",
+        "qkv_projection": "separate"
+      },
+      "parameters": 818432,
+      "steps": 300,
+      "processed_tokens": 307200,
+      "train_loss_last": 0.02504616603255272,
+      "validation_loss_initial": 4.222295761108398,
+      "validation_loss_final": 5.32273006439209,
+      "validation_bpb_final": 7.679076267889061,
+      "elapsed_seconds": 2.694157499994617,
+      "tokens_per_second": 114024.51415725095,
+      "peak_memory_mib": 61.8642578125
+    },
+    {
+      "variant": {
+        "name": "fused_qkv_only",
+        "position_encoding": "learned",
+        "norm": "layernorm",
+        "activation": "gelu",
+        "attention_backend": "manual",
+        "qkv_projection": "fused"
+      },
+      "parameters": 818432,
+      "steps": 300,
+      "processed_tokens": 307200,
+      "train_loss_last": 0.025280632078647614,
+      "validation_loss_initial": 4.222295761108398,
+      "validation_loss_final": 5.278610706329346,
+      "validation_bpb_final": 7.6154254888047355,
+      "elapsed_seconds": 2.8303251000033924,
+      "tokens_per_second": 108538.76821416443,
+      "peak_memory_mib": 65.7548828125
+    },
+    {
+      "variant": {
+        "name": "modern_combined",
+        "position_encoding": "rope",
+        "norm": "rmsnorm",
+        "activation": "swiglu",
+        "attention_backend": "sdpa",
+        "qkv_projection": "fused"
+      },
+      "parameters": 1068672,
+      "steps": 300,
+      "processed_tokens": 307200,
+      "train_loss_last": 0.02494889497756958,
+      "validation_loss_initial": 4.200828552246094,
+      "validation_loss_final": 5.520659446716309,
+      "validation_bpb_final": 7.9646280062144275,
+      "elapsed_seconds": 4.427596000001358,
+      "tokens_per_second": 69383.02410606247,
+      "peak_memory_mib": 85.72607421875
+    }
+  ],
+  "tokenizer_comparison": {
+    "characters": 100000,
+    "character_vocab_size": 66,
+    "character_tokens": 100000,
+    "bpe_vocab_size": 256,
+    "bpe_tokens": 51344,
+    "characters_per_bpe_token": 1.9476472421315052,
+    "token_reduction_rate": 0.48656,
+    "roundtrip_ok": true
+  },
+  "limitations": [
+    "架构结果是固定 Batch 的短步数 micro-benchmark，不替代 2,000 步正式训练。",
+    "单 seed、单 GPU，不外推为所有硬件结论。",
+    "各变体参数量并非完全相同，吞吐与 Loss 需要结合参数量解释。",
+    "BPE 只比较压缩与可逆性，尚未完成相同字符预算的正式 Loss/BPB 对照。"
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "training_records": 2700,
+  "unique_training_prompts": 2700,
+  "internal_duplicate_prompt_count": 0,
+  "evaluation_prompts": 250,
+  "normalization": "lowercase alphanumeric characters",
+  "exact_overlap_count": 0,
+  "exact_overlaps": [],
+  "near_overlap_threshold": 0.8,
+  "near_overlap_count": 0,
+  "near_overlaps": [],
+  "maximum_character_trigram_jaccard": 0.473684,
+  "category_counts": {
+    "calculator": 540,
+    "current_time": 540,
+    "direct": 540,
+    "recovery": 540,
+    "retrieval": 540
+  },
+  "train_count": 2400,
+  "validation_count": 300
+}

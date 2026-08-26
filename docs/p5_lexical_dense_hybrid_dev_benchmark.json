@@ -1,0 +1,1008 @@
+{
+  "split": "dev",
+  "version": "agent-dev-v1",
+  "fingerprint": "b61e5a51213dc377df7c8ed16e1507db81df800f74ad87eb662f37d90b45a1ee",
+  "embedding_model": "D:\\mini-gpt-from-scratch\\models\\bge-small-zh-v1.5",
+  "document_count": 15,
+  "strategies": [
+    {
+      "name": "lexical",
+      "case_count": 22,
+      "recall_at_1": 1.0,
+      "recall_at_3": 1.0,
+      "recall_at_5": 1.0,
+      "mrr": 1.0,
+      "avg_latency_ms": 0.27821363652368414,
+      "p95_latency_ms": 0.44799999886890873,
+      "predictions": [
+        {
+          "case_id": "ms-006",
+          "gold": [
+            "doc-office"
+          ],
+          "retrieved": [
+            "doc-office",
+            "doc-budget",
+            "doc-gpu",
+            "doc-hours",
+            "doc-meet"
+          ],
+          "first_relevant_rank": 1,
+          "latency_ms": 0.701
+        },
+        {
+          "case_id": "ms-007",
+          "gold": [
+            "doc-budget"
+          ],
+          "retrieved": [
+            "doc-budget"
+          ],
+          "first_relevant_rank": 1,
+          "latency_ms": 0.331
+        },
+        {
+          "case_id": "ms-008",
+          "gold": [
+            "doc-oncall"
+          ],
+          "retrieved": [
+            "doc-oncall",
+            "doc-printer",
+            "doc-gpu",
+            "doc-backup",
+            "doc-hours"
+          ],
+          "first_relevant_rank": 1,
+          "latency_ms": 0.333
+        },
+        {
+          "case_id": "ms-009",
+          "gold": [
+            "doc-hours"
+          ],
+          "retrieved": [
+            "doc-hours",
+            "doc-leave",
+            "doc-oncall",
+            "doc-printer",
+            "doc-rag"
+          ],
+          "first_relevant_rank": 1,
+          "latency_ms": 0.313
+        },
+        {
+          "case_id": "ms-010",
+          "gold": [
+            "doc-model"
+          ],
+          "retrieved": [
+            "doc-model",
+            "doc-rag",
+            "doc-leave"
+          ],
+          "first_relevant_rank": 1,
+          "latency_ms": 0.448
+        },
+        {
+          "case_id": "ms-014",
+          "gold": [
+            "doc-printer"
+          ],
+          "retrieved": [
+            "doc-printer",
+            "doc-oncall",
+            "doc-gpu"
+          ],
+          "first_relevant_rank": 1,
+          "latency_ms": 0.256
+        },
+        {
+          "case_id": "ms-015",
+          "gold": [
+            "doc-eval"
+          ],
+          "retrieved": [
+            "doc-eval",
+            "doc-backup",
+            "doc-model"
+          ],
+          "first_relevant_rank": 1,
+          "latency_ms": 0.185
+        },
+        {
+          "case_id": "rt-001",
+          "gold": [
+            "doc-office"
+          ],
+          "retrieved": [
+            "doc-office",
+            "doc-budget",
+            "doc-gpu",
+            "doc-hours",
+            "doc-meet"
+          ],
+          "first_relevant_rank": 1,
+          "latency_ms": 0.218
+        },
+        {
+          "case_id": "rt-002",
+          "gold": [
+            "doc-gpu"
+          ],
+          "retrieved": [
+            "doc-gpu",
+            "doc-oncall",
+            "doc-printer"
+          ],
+          "first_relevant_rank": 1,
+          "latency_ms": 0.183
+        },
+        {
+          "case_id": "rt-003",
+          "gold": [
+            "doc-hours"
+          ],
+          "retrieved": [
+            "doc-hours",
+            "doc-oncall",
+            "doc-leave",
+            "doc-printer",
+            "doc-rag"
+          ],
+          "first_relevant_rank": 1,
+          "latency_ms": 0.346
+        },
+        {
+          "case_id": "rt-004",
+          "gold": [
+            "doc-oncall"
+          ],
+          "retrieved": [
+            "doc-oncall",
+            "doc-printer",
+            "doc-gpu",
+            "doc-backup",
+            "doc-hours"
+          ],
+          "first_relevant_rank": 1,
+          "latency_ms": 0.194
+        },
+        {
+          "case_id": "rt-005",
+          "gold": [
+            "doc-budget"
+          ],
+          "retrieved": [
+            "doc-budget"
+          ],
+          "first_relevant_rank": 1,
+          "latency_ms": 0.205
+        },
+        {
+          "case_id": "rt-006",
+          "gold": [
+            "doc-model"
+          ],
+          "retrieved": [
+            "doc-model",
+            "doc-rag",
+            "doc-leave"
+          ],
+          "first_relevant_rank": 1,
+          "latency_ms": 0.2
+        },
+        {
+          "case_id": "rt-007",
+          "gold": [
+            "doc-ticket"
+          ],
+          "retrieved": [
+            "doc-ticket",
+            "doc-safety",
+            "doc-oncall",
+            "doc-wifi",
+            "doc-hours"
+          ],
+          "first_relevant_rank": 1,
+          "latency_ms": 0.212
+        },
+        {
+          "case_id": "rt-008",
+          "gold": [
+            "doc-wifi"
+          ],
+          "retrieved": [
+            "doc-wifi",
+            "doc-ticket"
+          ],
+          "first_relevant_rank": 1,
+          "latency_ms": 0.183
+        },
+        {
+          "case_id": "rt-009",
+          "gold": [
+            "doc-leave"
+          ],
+          "retrieved": [
+            "doc-leave",
+            "doc-budget",
+            "doc-model",
+            "doc-rag",
+            "doc-ticket"
+          ],
+          "first_relevant_rank": 1,
+          "latency_ms": 0.475
+        },
+        {
+          "case_id": "rt-010",
+          "gold": [
+            "doc-backup"
+          ],
+          "retrieved": [
+            "doc-backup",
+            "doc-eval",
+            "doc-meet",
+            "doc-hours",
+            "doc-model"
+          ],
+          "first_relevant_rank": 1,
+          "latency_ms": 0.267
+        },
+        {
+          "case_id": "rt-011",
+          "gold": [
+            "doc-eval"
+          ],
+          "retrieved": [
+            "doc-eval",
+            "doc-backup",
+            "doc-model"
+          ],
+          "first_relevant_rank": 1,
+          "latency_ms": 0.234
+        },
+        {
+          "case_id": "rt-012",
+          "gold": [
+            "doc-safety"
+          ],
+          "retrieved": [
+            "doc-safety",
+            "doc-ticket",
+            "doc-wifi",
+            "doc-eval",
+            "doc-hours"
+          ],
+          "first_relevant_rank": 1,
+          "latency_ms": 0.24
+        },
+        {
+          "case_id": "rt-013",
+          "gold": [
+            "doc-rag"
+          ],
+          "retrieved": [
+            "doc-rag",
+            "doc-model",
+            "doc-leave"
+          ],
+          "first_relevant_rank": 1,
+          "latency_ms": 0.214
+        },
+        {
+          "case_id": "rt-014",
+          "gold": [
+            "doc-meet"
+          ],
+          "retrieved": [
+            "doc-meet",
+            "doc-hours",
+            "doc-budget",
+            "doc-gpu",
+            "doc-backup"
+          ],
+          "first_relevant_rank": 1,
+          "latency_ms": 0.196
+        },
+        {
+          "case_id": "rt-015",
+          "gold": [
+            "doc-printer"
+          ],
+          "retrieved": [
+            "doc-printer",
+            "doc-oncall",
+            "doc-gpu"
+          ],
+          "first_relevant_rank": 1,
+          "latency_ms": 0.185
+        }
+      ]
+    },
+    {
+      "name": "dense",
+      "case_count": 22,
+      "recall_at_1": 1.0,
+      "recall_at_3": 1.0,
+      "recall_at_5": 1.0,
+      "mrr": 1.0,
+      "avg_latency_ms": 13.851140909371845,
+      "p95_latency_ms": 16.912800001591677,
+      "predictions": [
+        {
+          "case_id": "ms-006",
+          "gold": [
+            "doc-office"
+          ],
+          "retrieved": [
+            "doc-office",
+            "doc-gpu",
+            "doc-hours",
+            "doc-budget",
+            "doc-model"
+          ],
+          "first_relevant_rank": 1,
+          "latency_ms": 24.271
+        },
+        {
+          "case_id": "ms-007",
+          "gold": [
+            "doc-budget"
+          ],
+          "retrieved": [
+            "doc-budget",
+            "doc-safety",
+            "doc-gpu",
+            "doc-ticket",
+            "doc-model"
+          ],
+          "first_relevant_rank": 1,
+          "latency_ms": 14.467
+        },
+        {
+          "case_id": "ms-008",
+          "gold": [
+            "doc-oncall"
+          ],
+          "retrieved": [
+            "doc-oncall",
+            "doc-hours",
+            "doc-gpu",
+            "doc-backup",
+            "doc-model"
+          ],
+          "first_relevant_rank": 1,
+          "latency_ms": 12.755
+        },
+        {
+          "case_id": "ms-009",
+          "gold": [
+            "doc-hours"
+          ],
+          "retrieved": [
+            "doc-hours",
+            "doc-meet",
+            "doc-backup",
+            "doc-oncall",
+            "doc-leave"
+          ],
+          "first_relevant_rank": 1,
+          "latency_ms": 16.913
+        },
+        {
+          "case_id": "ms-010",
+          "gold": [
+            "doc-model"
+          ],
+          "retrieved": [
+            "doc-model",
+            "doc-gpu",
+            "doc-rag",
+            "doc-safety",
+            "doc-wifi"
+          ],
+          "first_relevant_rank": 1,
+          "latency_ms": 17.398
+        },
+        {
+          "case_id": "ms-014",
+          "gold": [
+            "doc-printer"
+          ],
+          "retrieved": [
+            "doc-printer",
+            "doc-gpu",
+            "doc-safety",
+            "doc-rag",
+            "doc-model"
+          ],
+          "first_relevant_rank": 1,
+          "latency_ms": 14.255
+        },
+        {
+          "case_id": "ms-015",
+          "gold": [
+            "doc-eval"
+          ],
+          "retrieved": [
+            "doc-eval",
+            "doc-model",
+            "doc-rag",
+            "doc-safety",
+            "doc-gpu"
+          ],
+          "first_relevant_rank": 1,
+          "latency_ms": 13.77
+        },
+        {
+          "case_id": "rt-001",
+          "gold": [
+            "doc-office"
+          ],
+          "retrieved": [
+            "doc-office",
+            "doc-gpu",
+            "doc-budget",
+            "doc-hours",
+            "doc-model"
+          ],
+          "first_relevant_rank": 1,
+          "latency_ms": 16.118
+        },
+        {
+          "case_id": "rt-002",
+          "gold": [
+            "doc-gpu"
+          ],
+          "retrieved": [
+            "doc-gpu",
+            "doc-model",
+            "doc-budget",
+            "doc-printer",
+            "doc-safety"
+          ],
+          "first_relevant_rank": 1,
+          "latency_ms": 16.75
+        },
+        {
+          "case_id": "rt-003",
+          "gold": [
+            "doc-hours"
+          ],
+          "retrieved": [
+            "doc-hours",
+            "doc-oncall",
+            "doc-meet",
+            "doc-backup",
+            "doc-leave"
+          ],
+          "first_relevant_rank": 1,
+          "latency_ms": 13.223
+        },
+        {
+          "case_id": "rt-004",
+          "gold": [
+            "doc-oncall"
+          ],
+          "retrieved": [
+            "doc-oncall",
+            "doc-hours",
+            "doc-gpu",
+            "doc-backup",
+            "doc-model"
+          ],
+          "first_relevant_rank": 1,
+          "latency_ms": 12.407
+        },
+        {
+          "case_id": "rt-005",
+          "gold": [
+            "doc-budget"
+          ],
+          "retrieved": [
+            "doc-budget",
+            "doc-safety",
+            "doc-gpu",
+            "doc-ticket",
+            "doc-model"
+          ],
+          "first_relevant_rank": 1,
+          "latency_ms": 12.716
+        },
+        {
+          "case_id": "rt-006",
+          "gold": [
+            "doc-model"
+          ],
+          "retrieved": [
+            "doc-model",
+            "doc-gpu",
+            "doc-rag",
+            "doc-wifi",
+            "doc-office"
+          ],
+          "first_relevant_rank": 1,
+          "latency_ms": 13.077
+        },
+        {
+          "case_id": "rt-007",
+          "gold": [
+            "doc-ticket"
+          ],
+          "retrieved": [
+            "doc-ticket",
+            "doc-safety",
+            "doc-model",
+            "doc-gpu",
+            "doc-printer"
+          ],
+          "first_relevant_rank": 1,
+          "latency_ms": 12.531
+        },
+        {
+          "case_id": "rt-008",
+          "gold": [
+            "doc-wifi"
+          ],
+          "retrieved": [
+            "doc-wifi",
+            "doc-model",
+            "doc-rag",
+            "doc-gpu",
+            "doc-printer"
+          ],
+          "first_relevant_rank": 1,
+          "latency_ms": 13.221
+        },
+        {
+          "case_id": "rt-009",
+          "gold": [
+            "doc-leave"
+          ],
+          "retrieved": [
+            "doc-leave",
+            "doc-rag",
+            "doc-safety",
+            "doc-budget",
+            "doc-model"
+          ],
+          "first_relevant_rank": 1,
+          "latency_ms": 11.42
+        },
+        {
+          "case_id": "rt-010",
+          "gold": [
+            "doc-backup"
+          ],
+          "retrieved": [
+            "doc-backup",
+            "doc-meet",
+            "doc-hours",
+            "doc-model",
+            "doc-safety"
+          ],
+          "first_relevant_rank": 1,
+          "latency_ms": 12.924
+        },
+        {
+          "case_id": "rt-011",
+          "gold": [
+            "doc-eval"
+          ],
+          "retrieved": [
+            "doc-eval",
+            "doc-model",
+            "doc-rag",
+            "doc-safety",
+            "doc-backup"
+          ],
+          "first_relevant_rank": 1,
+          "latency_ms": 10.946
+        },
+        {
+          "case_id": "rt-012",
+          "gold": [
+            "doc-safety"
+          ],
+          "retrieved": [
+            "doc-safety",
+            "doc-wifi",
+            "doc-eval",
+            "doc-leave",
+            "doc-ticket"
+          ],
+          "first_relevant_rank": 1,
+          "latency_ms": 11.078
+        },
+        {
+          "case_id": "rt-013",
+          "gold": [
+            "doc-rag"
+          ],
+          "retrieved": [
+            "doc-rag",
+            "doc-model",
+            "doc-safety",
+            "doc-eval",
+            "doc-printer"
+          ],
+          "first_relevant_rank": 1,
+          "latency_ms": 10.528
+        },
+        {
+          "case_id": "rt-014",
+          "gold": [
+            "doc-meet"
+          ],
+          "retrieved": [
+            "doc-meet",
+            "doc-hours",
+            "doc-wifi",
+            "doc-model",
+            "doc-backup"
+          ],
+          "first_relevant_rank": 1,
+          "latency_ms": 12.37
+        },
+        {
+          "case_id": "rt-015",
+          "gold": [
+            "doc-printer"
+          ],
+          "retrieved": [
+            "doc-printer",
+            "doc-gpu",
+            "doc-safety",
+            "doc-rag",
+            "doc-model"
+          ],
+          "first_relevant_rank": 1,
+          "latency_ms": 11.586
+        }
+      ]
+    },
+    {
+      "name": "hybrid_rrf",
+      "case_count": 22,
+      "recall_at_1": 1.0,
+      "recall_at_3": 1.0,
+      "recall_at_5": 1.0,
+      "mrr": 1.0,
+      "avg_latency_ms": 13.29477272735279,
+      "p95_latency_ms": 15.468000001419568,
+      "predictions": [
+        {
+          "case_id": "ms-006",
+          "gold": [
+            "doc-office"
+          ],
+          "retrieved": [
+            "doc-office",
+            "doc-gpu",
+            "doc-budget",
+            "doc-hours",
+            "doc-model"
+          ],
+          "first_relevant_rank": 1,
+          "latency_ms": 11.811
+        },
+        {
+          "case_id": "ms-007",
+          "gold": [
+            "doc-budget"
+          ],
+          "retrieved": [
+            "doc-budget",
+            "doc-safety",
+            "doc-gpu",
+            "doc-ticket",
+            "doc-model"
+          ],
+          "first_relevant_rank": 1,
+          "latency_ms": 13.553
+        },
+        {
+          "case_id": "ms-008",
+          "gold": [
+            "doc-oncall"
+          ],
+          "retrieved": [
+            "doc-oncall",
+            "doc-gpu",
+            "doc-hours",
+            "doc-backup",
+            "doc-printer"
+          ],
+          "first_relevant_rank": 1,
+          "latency_ms": 11.419
+        },
+        {
+          "case_id": "ms-009",
+          "gold": [
+            "doc-hours"
+          ],
+          "retrieved": [
+            "doc-hours",
+            "doc-leave",
+            "doc-oncall",
+            "doc-rag",
+            "doc-safety"
+          ],
+          "first_relevant_rank": 1,
+          "latency_ms": 14.295
+        },
+        {
+          "case_id": "ms-010",
+          "gold": [
+            "doc-model"
+          ],
+          "retrieved": [
+            "doc-model",
+            "doc-rag",
+            "doc-leave",
+            "doc-gpu",
+            "doc-safety"
+          ],
+          "first_relevant_rank": 1,
+          "latency_ms": 14.812
+        },
+        {
+          "case_id": "ms-014",
+          "gold": [
+            "doc-printer"
+          ],
+          "retrieved": [
+            "doc-printer",
+            "doc-gpu",
+            "doc-oncall",
+            "doc-safety",
+            "doc-rag"
+          ],
+          "first_relevant_rank": 1,
+          "latency_ms": 15.922
+        },
+        {
+          "case_id": "ms-015",
+          "gold": [
+            "doc-eval"
+          ],
+          "retrieved": [
+            "doc-eval",
+            "doc-model",
+            "doc-backup",
+            "doc-rag",
+            "doc-safety"
+          ],
+          "first_relevant_rank": 1,
+          "latency_ms": 16.294
+        },
+        {
+          "case_id": "rt-001",
+          "gold": [
+            "doc-office"
+          ],
+          "retrieved": [
+            "doc-office",
+            "doc-budget",
+            "doc-gpu",
+            "doc-hours",
+            "doc-model"
+          ],
+          "first_relevant_rank": 1,
+          "latency_ms": 14.034
+        },
+        {
+          "case_id": "rt-002",
+          "gold": [
+            "doc-gpu"
+          ],
+          "retrieved": [
+            "doc-gpu",
+            "doc-printer",
+            "doc-oncall",
+            "doc-model",
+            "doc-budget"
+          ],
+          "first_relevant_rank": 1,
+          "latency_ms": 12.919
+        },
+        {
+          "case_id": "rt-003",
+          "gold": [
+            "doc-hours"
+          ],
+          "retrieved": [
+            "doc-hours",
+            "doc-oncall",
+            "doc-leave",
+            "doc-safety",
+            "doc-ticket"
+          ],
+          "first_relevant_rank": 1,
+          "latency_ms": 13.027
+        },
+        {
+          "case_id": "rt-004",
+          "gold": [
+            "doc-oncall"
+          ],
+          "retrieved": [
+            "doc-oncall",
+            "doc-gpu",
+            "doc-hours",
+            "doc-backup",
+            "doc-printer"
+          ],
+          "first_relevant_rank": 1,
+          "latency_ms": 13.603
+        },
+        {
+          "case_id": "rt-005",
+          "gold": [
+            "doc-budget"
+          ],
+          "retrieved": [
+            "doc-budget",
+            "doc-safety",
+            "doc-gpu",
+            "doc-ticket",
+            "doc-model"
+          ],
+          "first_relevant_rank": 1,
+          "latency_ms": 12.546
+        },
+        {
+          "case_id": "rt-006",
+          "gold": [
+            "doc-model"
+          ],
+          "retrieved": [
+            "doc-model",
+            "doc-rag",
+            "doc-leave",
+            "doc-gpu",
+            "doc-wifi"
+          ],
+          "first_relevant_rank": 1,
+          "latency_ms": 15.468
+        },
+        {
+          "case_id": "rt-007",
+          "gold": [
+            "doc-ticket"
+          ],
+          "retrieved": [
+            "doc-ticket",
+            "doc-safety",
+            "doc-wifi",
+            "doc-oncall",
+            "doc-hours"
+          ],
+          "first_relevant_rank": 1,
+          "latency_ms": 13.422
+        },
+        {
+          "case_id": "rt-008",
+          "gold": [
+            "doc-wifi"
+          ],
+          "retrieved": [
+            "doc-wifi",
+            "doc-ticket",
+            "doc-model",
+            "doc-rag",
+            "doc-gpu"
+          ],
+          "first_relevant_rank": 1,
+          "latency_ms": 14.862
+        },
+        {
+          "case_id": "rt-009",
+          "gold": [
+            "doc-leave"
+          ],
+          "retrieved": [
+            "doc-leave",
+            "doc-budget",
+            "doc-rag",
+            "doc-model",
+            "doc-ticket"
+          ],
+          "first_relevant_rank": 1,
+          "latency_ms": 12.912
+        },
+        {
+          "case_id": "rt-010",
+          "gold": [
+            "doc-backup"
+          ],
+          "retrieved": [
+            "doc-backup",
+            "doc-meet",
+            "doc-hours",
+            "doc-eval",
+            "doc-model"
+          ],
+          "first_relevant_rank": 1,
+          "latency_ms": 10.997
+        },
+        {
+          "case_id": "rt-011",
+          "gold": [
+            "doc-eval"
+          ],
+          "retrieved": [
+            "doc-eval",
+            "doc-model",
+            "doc-backup",
+            "doc-rag",
+            "doc-safety"
+          ],
+          "first_relevant_rank": 1,
+          "latency_ms": 10.872
+        },
+        {
+          "case_id": "rt-012",
+          "gold": [
+            "doc-safety"
+          ],
+          "retrieved": [
+            "doc-safety",
+            "doc-wifi",
+            "doc-ticket",
+            "doc-eval",
+            "doc-leave"
+          ],
+          "first_relevant_rank": 1,
+          "latency_ms": 13.051
+        },
+        {
+          "case_id": "rt-013",
+          "gold": [
+            "doc-rag"
+          ],
+          "retrieved": [
+            "doc-rag",
+            "doc-model",
+            "doc-leave",
+            "doc-safety",
+            "doc-eval"
+          ],
+          "first_relevant_rank": 1,
+          "latency_ms": 10.508
+        },
+        {
+          "case_id": "rt-014",
+          "gold": [
+            "doc-meet"
+          ],
+          "retrieved": [
+            "doc-meet",
+            "doc-hours",
+            "doc-backup",
+            "doc-gpu",
+            "doc-leave"
+          ],
+          "first_relevant_rank": 1,
+          "latency_ms": 13.881
+        },
+        {
+          "case_id": "rt-015",
+          "gold": [
+            "doc-printer"
+          ],
+          "retrieved": [
+            "doc-printer",
+            "doc-gpu",
+            "doc-oncall",
+            "doc-safety",
+            "doc-rag"
+          ],
+          "first_relevant_rank": 1,
+          "latency_ms": 12.276
+        }
+      ]
+    }
+  ]
+}

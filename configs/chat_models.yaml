@@ -1,0 +1,15 @@
+# Local chat-backend profiles. The HTTP service still reads MINIGPT_CHAT_* env vars.
+
+profiles:
+  ci_and_interface:
+    model_source: Qwen/Qwen2.5-0.5B-Instruct
+    adapter_path: hf_lora/artifacts/qwen2_5_0_5b_lora/adapter
+    dtype: float32
+    quantization: none
+    notes: Fast CI, /chat contract tests, and adapter reload checks.
+
+  local_agent:
+    model_source: Qwen/Qwen2.5-3B-Instruct
+    dtype: float16
+    quantization: 4bit
+    notes: Preferred local Agent model on 8GB GPUs. Requires bitsandbytes.

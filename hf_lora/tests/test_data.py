@@ -56,3 +56,64 @@ def test_invalid_roles_and_overlong_samples_are_rejected() -> None:
         validate_messages([{"role": "user", "content": "问题"}])
     with pytest.raises(ValueError, match="超过 max_length"):
         encode_sft_example(example(), FakeTokenizer(), 5)
+
+
+class MultiTurnFakeTokenizer:
+    chat_template = "fake-multi-turn"
+
+    _role = {"system": 1, "user": 2, "assistant": 3, "tool": 4}
+
+    def apply_chat_template(
+        self, messages, *, tokenize, add_generation_prompt, return_dict
+    ):
+        assert tokenize is True and return_dict is True
+        ids: list[int] = []
+        for message in messages:
+            ids.extend([self._role[message["role"]], len(message["content"]), 9])
+        if add_generation_prompt:
+            ids.append(self._role["assistant"])
+        return {"input_ids": ids}
+
+
+def test_encode_supervises_every_assistant_turn_but_not_tool_results() -> None:
+    record = {
+        "messages": [
+            {"role": "user", "content": "计算"},
+            {"role": "assistant", "content": "调用"},
+            {"role": "tool", "content": "42", "name": "calculator"},
+            {"role": "assistant", "content": "答案"},
+        ]
+    }
+
+    encoded = encode_sft_example(record, MultiTurnFakeTokenizer(), 64)
+
+    assert encoded["labels"] == [
+        -100,
+        -100,
+        -100,
+        -100,
+        len("调用"),
+        9,
+        -100,
+        -100,
+        -100,
+        -100,
+        len("答案"),
+        9,
+    ]
+
+
+@pytest.mark.parametrize(
+    "roles",
+    [
+        ("assistant",),
+        ("user", "tool", "assistant"),
+        ("user", "assistant", "assistant"),
+        ("user", "assistant", "tool"),
+    ],
+)
+def test_invalid_multi_turn_role_transitions_are_rejected(roles) -> None:
+    messages = [{"role": role, "content": role} for role in roles]
+
+    with pytest.raises(ValueError):
+        validate_messages(messages)

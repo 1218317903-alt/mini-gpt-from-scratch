@@ -73,6 +73,8 @@ def test_chat_request_defaults_and_message_validation() -> None:
     assert request.greedy is False
     assert request.top_k is None
     assert request.top_p is None
+    assert request.domain_id is None
+    assert request.domain_access_token is None
 
     with pytest.raises(ValidationError, match="user message"):
         ChatRequest.model_validate(
@@ -88,6 +90,14 @@ def test_chat_request_defaults_and_message_validation() -> None:
         {"messages": [{"role": "unknown", "content": "x"}]},
         {"messages": [{"role": "user", "content": "x"}], "temperature": 0},
         {"messages": [{"role": "user", "content": "x"}], "top_p": 1.1},
+        {
+            "messages": [{"role": "user", "content": "x"}],
+            "domain_id": "legal_domain",
+        },
+        {
+            "messages": [{"role": "user", "content": "x"}],
+            "domain_access_token": "secret",
+        },
         {"messages": [{"role": "user", "content": "x"}], "extra": True},
     ],
 )
@@ -104,15 +114,22 @@ def test_chat_response_has_stable_shape() -> None:
         generated_tokens=4,
         finish_reason="stop",
         model="Qwen/Qwen2.5-0.5B-Instruct",
+        duration_ms=12.5,
     )
 
     assert response.model_dump() == {
-        "message": {"role": "assistant", "content": "你好！", "name": None},
+        "message": {
+            "role": "assistant",
+            "content": "你好！",
+            "name": None,
+            "tool_call_id": None,
+        },
         "generated_text": "你好！",
         "prompt_tokens": 12,
         "generated_tokens": 4,
         "finish_reason": "stop",
         "model": "Qwen/Qwen2.5-0.5B-Instruct",
+        "duration_ms": 12.5,
     }
 
 
@@ -163,3 +180,36 @@ def test_error_response_has_stable_shape() -> None:
         "detail": "not ready",
         "request_id": "trace-123",
     }
+
+
+def test_chat_request_keeps_three_turn_context_and_tool_role() -> None:
+    request = ChatRequest.model_validate(
+        {
+            "messages": [
+                {"role": "system", "content": "简短回答"},
+                {"role": "user", "content": "1+1"},
+                {"role": "assistant", "content": "2"},
+                {"role": "user", "content": "再加3"},
+                {"role": "assistant", "content": "5"},
+                {
+                    "role": "tool",
+                    "content": "ok",
+                    "name": "calculator",
+                    "tool_call_id": "call-1",
+                },
+                {"role": "user", "content": "再加4"},
+            ]
+        }
+    )
+
+    assert [message.role for message in request.messages] == [
+        "system",
+        "user",
+        "assistant",
+        "user",
+        "assistant",
+        "tool",
+        "user",
+    ]
+    assert request.messages[-2].name == "calculator"
+    assert request.messages[-2].tool_call_id == "call-1"

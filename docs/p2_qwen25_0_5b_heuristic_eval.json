@@ -1,0 +1,304 @@
+{
+  "validation": {
+    "ok": true,
+    "case_count": 100,
+    "counts": {
+      "direct_answer": 20,
+      "multi_step": 15,
+      "retrieval": 15,
+      "tool_arguments": 15,
+      "tool_selection": 35
+    },
+    "duplicates": [],
+    "count_errors": {},
+    "unexpected_categories": [],
+    "training_overlap": [],
+    "retrieval_errors": [],
+    "recall_failures": [],
+    "empty_user": [],
+    "manifest": {
+      "split": "dev",
+      "version": "agent-dev-v1",
+      "purpose": "Prompt, routing, data-design and failure-analysis development split.",
+      "frozen": false,
+      "fingerprint": "b61e5a51213dc377df7c8ed16e1507db81df800f74ad87eb662f37d90b45a1ee",
+      "review_status": "pending_owner_signoff",
+      "errors": []
+    }
+  },
+  "run": {
+    "model": "C:\\Users\\12183\\.cache\\huggingface\\hub\\models--Qwen--Qwen2.5-0.5B-Instruct\\snapshots\\7ae557604adf67be50417f59c2c2f167def9a775",
+    "adapter_path": "D:\\mini-gpt-from-scratch\\hf_lora\\artifacts\\qwen2_5_0_5b_lora\\adapter",
+    "device": "cuda",
+    "dtype": "float16",
+    "quantization": "none",
+    "routing": "heuristic",
+    "selected_cases": 100,
+    "predictions_written": 100,
+    "predictions_available": 100,
+    "predictions_output": "evals\\results\\p2_qwen25_0_5b_heuristic_predictions.jsonl",
+    "generation": {
+      "max_new_tokens": 128,
+      "temperature": 0.7,
+      "greedy": true,
+      "seed": 42
+    }
+  },
+  "scoring": {
+    "ok": true,
+    "metrics": {
+      "cases_scored": 100,
+      "tool_selection_accuracy": 0.9384615384615385,
+      "json_valid_rate": 1.0,
+      "argument_accuracy": 0.75,
+      "task_success_rate": 0.65,
+      "single_tool_success_rate": 0.7142857142857143,
+      "unnecessary_tool_rate": 0.0,
+      "multi_step_avg_calls": 1.2666666666666666,
+      "retrieval_trigger_precision": 1.0,
+      "retrieval_trigger_recall": 0.8636363636363636,
+      "end_to_end_rag_recall_at_1": 0.4090909090909091,
+      "end_to_end_rag_recall_at_3": 0.4090909090909091,
+      "end_to_end_rag_recall_at_5": 0.45454545454545453,
+      "conditional_retrieval_recall_at_1": 0.47368421052631576,
+      "conditional_retrieval_recall_at_3": 0.47368421052631576,
+      "conditional_retrieval_recall_at_5": 0.5263157894736842,
+      "rag_recall_at_5": 0.45454545454545453,
+      "baseline_rag_recall_at_5": 1.0,
+      "citation_accuracy": 0.0,
+      "citation_precision": null,
+      "citation_recall": 0.0,
+      "ungrounded_rate": 1.0,
+      "unsupported_answer_rate": 1.0,
+      "recovery_rate": 0.75,
+      "avg_duration_ms": 3047.6930999999995,
+      "avg_generated_tokens": 68.06,
+      "targets": {
+        "json_valid_rate": 0.95,
+        "single_tool_success_rate": 0.85,
+        "unnecessary_tool_rate": 0.1,
+        "rag_recall_at_5": 0.85,
+        "recovery_rate": 0.7
+      }
+    },
+    "confidence_intervals": {
+      "tool_selection_accuracy": {
+        "point": 0.9384615384615385,
+        "lower": 0.874955985915493,
+        "upper": 0.9857142857142858,
+        "confidence": 0.95,
+        "valid_samples": 1000,
+        "requested_samples": 1000
+      },
+      "json_valid_rate": {
+        "point": 1.0,
+        "lower": 1.0,
+        "upper": 1.0,
+        "confidence": 0.95,
+        "valid_samples": 1000,
+        "requested_samples": 1000
+      },
+      "argument_accuracy": {
+        "point": 0.75,
+        "lower": 0.6086956521739131,
+        "upper": 0.871875,
+        "confidence": 0.95,
+        "valid_samples": 1000,
+        "requested_samples": 1000
+      },
+      "task_success_rate": {
+        "point": 0.65,
+        "lower": 0.56,
+        "upper": 0.75,
+        "confidence": 0.95,
+        "valid_samples": 1000,
+        "requested_samples": 1000
+      },
+      "single_tool_success_rate": {
+        "point": 0.7142857142857143,
+        "lower": 0.5652173913043478,
+        "upper": 0.8500265957446808,
+        "confidence": 0.95,
+        "valid_samples": 1000,
+        "requested_samples": 1000
+      },
+      "unnecessary_tool_rate": {
+        "point": 0.0,
+        "lower": 0.0,
+        "upper": 0.0,
+        "confidence": 0.95,
+        "valid_samples": 1000,
+        "requested_samples": 1000
+      },
+      "retrieval_trigger_precision": {
+        "point": 1.0,
+        "lower": 1.0,
+        "upper": 1.0,
+        "confidence": 0.95,
+        "valid_samples": 1000,
+        "requested_samples": 1000
+      },
+      "retrieval_trigger_recall": {
+        "point": 0.8636363636363636,
+        "lower": 0.7142857142857143,
+        "upper": 1.0,
+        "confidence": 0.95,
+        "valid_samples": 1000,
+        "requested_samples": 1000
+      },
+      "end_to_end_rag_recall_at_5": {
+        "point": 0.45454545454545453,
+        "lower": 0.23524509803921573,
+        "upper": 0.6666666666666666,
+        "confidence": 0.95,
+        "valid_samples": 1000,
+        "requested_samples": 1000
+      },
+      "conditional_retrieval_recall_at_5": {
+        "point": 0.5263157894736842,
+        "lower": 0.2857142857142857,
+        "upper": 0.7502976190476188,
+        "confidence": 0.95,
+        "valid_samples": 1000,
+        "requested_samples": 1000
+      },
+      "citation_precision": {
+        "point": null,
+        "lower": null,
+        "upper": null,
+        "confidence": 0.95,
+        "valid_samples": 0,
+        "requested_samples": 1000
+      },
+      "citation_recall": {
+        "point": 0.0,
+        "lower": 0.0,
+        "upper": 0.0,
+        "confidence": 0.95,
+        "valid_samples": 1000,
+        "requested_samples": 1000
+      },
+      "unsupported_answer_rate": {
+        "point": 1.0,
+        "lower": 1.0,
+        "upper": 1.0,
+        "confidence": 0.95,
+        "valid_samples": 1000,
+        "requested_samples": 1000
+      },
+      "recovery_rate": {
+        "point": 0.75,
+        "lower": 0.0,
+        "upper": 1.0,
+        "confidence": 0.95,
+        "valid_samples": 982,
+        "requested_samples": 1000
+      }
+    },
+    "targets": {
+      "json_valid_rate": true,
+      "single_tool_success_rate": false,
+      "unnecessary_tool_rate": true,
+      "rag_recall_at_5": false,
+      "recovery_rate": true
+    },
+    "failure_analysis": {
+      "category_success": {
+        "direct_answer": {
+          "cases": 20,
+          "successes": 17,
+          "success_rate": 0.85
+        },
+        "multi_step": {
+          "cases": 15,
+          "successes": 8,
+          "success_rate": 0.5333333333333333
+        },
+        "retrieval": {
+          "cases": 15,
+          "successes": 0,
+          "success_rate": 0.0
+        },
+        "tool_arguments": {
+          "cases": 15,
+          "successes": 11,
+          "success_rate": 0.7333333333333333
+        },
+        "tool_selection": {
+          "cases": 35,
+          "successes": 29,
+          "success_rate": 0.8285714285714286
+        }
+      },
+      "failure_case_ids": {
+        "wrong_first_tool": [],
+        "missing_tool": [
+          "rt-011",
+          "rt-013",
+          "rt-014"
+        ],
+        "unnecessary_tool": [],
+        "argument_mismatch": [
+          "ta-004",
+          "ta-007",
+          "ta-013",
+          "ts-003",
+          "ts-004",
+          "ts-010",
+          "ts-011",
+          "ts-013",
+          "ts-016",
+          "ts-017"
+        ],
+        "retrieval_miss": [
+          "ms-007",
+          "ms-010",
+          "ms-014",
+          "rt-004",
+          "rt-006",
+          "rt-007",
+          "rt-010",
+          "rt-011",
+          "rt-012",
+          "rt-013",
+          "rt-014",
+          "rt-015"
+        ],
+        "citation_miss": [
+          "ms-006",
+          "ms-007",
+          "ms-008",
+          "ms-009",
+          "ms-010",
+          "ms-014",
+          "ms-015",
+          "rt-001",
+          "rt-002",
+          "rt-003",
+          "rt-004",
+          "rt-005",
+          "rt-006",
+          "rt-007",
+          "rt-008",
+          "rt-009",
+          "rt-010",
+          "rt-011",
+          "rt-012",
+          "rt-013",
+          "rt-014",
+          "rt-015"
+        ],
+        "recovery_failure": [
+          "ms-013"
+        ],
+        "runtime_error": []
+      },
+      "finish_reason_counts": {
+        "stop": 100
+      }
+    },
+    "missing_predictions": [],
+    "duplicate_predictions": [],
+    "unknown_predictions": []
+  }
+}

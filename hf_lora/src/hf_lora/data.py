@@ -11,10 +11,7 @@ import torch
 from torch.utils.data import Dataset
 
 IGNORE_INDEX = -100
-VALID_ROLE_ORDERS = (
-    ("user", "assistant"),
-    ("system", "user", "assistant"),
-)
+VALID_ROLES = {"system", "user", "assistant", "tool"}
 
 
 def load_jsonl(path: Path) -> list[dict[str, Any]]:
@@ -38,7 +35,7 @@ def load_jsonl(path: Path) -> list[dict[str, Any]]:
 
 
 def validate_messages(messages: Any) -> list[dict[str, str]]:
-    """第一版只接受单轮 user/assistant，可选 system。"""
+    """接受多轮对话与工具轨迹，并拒绝不可能的角色转移。"""
     if (
         not isinstance(messages, Sequence)
         or isinstance(messages, (str, bytes))
@@ -51,17 +48,42 @@ def validate_messages(messages: Any) -> list[dict[str, str]]:
             raise TypeError(f"第 {index} 条消息必须是字典。")
         role = message.get("role")
         content = message.get("content")
-        if role not in {"system", "user", "assistant"}:
+        if role not in VALID_ROLES:
             raise ValueError(f"第 {index} 条消息 role 非法：{role!r}。")
         if not isinstance(content, str):
             raise TypeError(f"第 {index} 条消息 content 必须是字符串。")
         content = content.strip()
         if not content:
             raise ValueError(f"第 {index} 条消息 content 不能为空。")
-        normalized.append({"role": role, "content": content})
+        normalized_message = {"role": role, "content": content}
+        for optional_key in ("name", "tool_call_id"):
+            optional_value = message.get(optional_key)
+            if optional_value is not None:
+                if not isinstance(optional_value, str) or not optional_value.strip():
+                    raise TypeError(
+                        f"第 {index} 条消息 {optional_key} 必须是非空字符串。"
+                    )
+                normalized_message[optional_key] = optional_value.strip()
+        normalized.append(normalized_message)
     roles = tuple(message["role"] for message in normalized)
-    if roles not in VALID_ROLE_ORDERS:
-        raise ValueError(f"第一版不支持角色顺序：{roles}。")
+    start = 1 if roles[0] == "system" else 0
+    if start >= len(roles) or roles[start] != "user":
+        raise ValueError(f"首个非 system 角色必须是 user：{roles}。")
+    if roles[-1] != "assistant":
+        raise ValueError(f"最后一个角色必须是 assistant：{roles}。")
+    for index, role in enumerate(roles):
+        if role == "system" and index != 0:
+            raise ValueError(f"system 只能出现在第一条：{roles}。")
+        if index <= start:
+            continue
+        previous = roles[index - 1]
+        allowed_previous = {
+            "user": {"assistant"},
+            "assistant": {"user", "tool"},
+            "tool": {"assistant"},
+        }[role]
+        if previous not in allowed_previous:
+            raise ValueError(f"不支持角色转移 {previous} -> {role}：{roles}。")
     return normalized
 
 
@@ -83,21 +105,35 @@ def _chat_ids(
 def encode_sft_example(
     example: dict[str, Any], tokenizer: Any, max_length: int
 ) -> dict[str, list[int]]:
-    """构造只监督 Assistant Response 的单条 SFT 样本。"""
+    """构造多轮样本，只监督每一段 Assistant 输出。"""
     if max_length <= 1:
         raise ValueError("max_length 必须大于 1。")
     if getattr(tokenizer, "chat_template", None) is None:
         raise ValueError("Tokenizer 没有聊天模板。")
     messages = validate_messages(example.get("messages"))
-    prompt_ids = _chat_ids(tokenizer, messages[:-1], generation=True)
     full_ids = _chat_ids(tokenizer, messages, generation=False)
-    if not prompt_ids or len(full_ids) <= len(prompt_ids):
-        raise ValueError("完整序列没有 Assistant Response Token。")
-    if full_ids[: len(prompt_ids)] != prompt_ids:
-        raise ValueError("Prompt Token 不是完整训练序列的前缀。")
+    if not full_ids:
+        raise ValueError("完整训练序列没有 Token。")
     if len(full_ids) > max_length:
         raise ValueError(f"样本超过 max_length：{len(full_ids)} > {max_length}。")
-    labels = [IGNORE_INDEX] * len(prompt_ids) + full_ids[len(prompt_ids) :]
+    labels = [IGNORE_INDEX] * len(full_ids)
+    supervised_tokens = 0
+    for index, message in enumerate(messages):
+        if message["role"] != "assistant":
+            continue
+        prompt_ids = _chat_ids(tokenizer, messages[:index], generation=True)
+        through_ids = _chat_ids(tokenizer, messages[: index + 1], generation=False)
+        if not prompt_ids or len(through_ids) <= len(prompt_ids):
+            raise ValueError(f"第 {index} 条 Assistant 没有 Response Token。")
+        if full_ids[: len(prompt_ids)] != prompt_ids:
+            raise ValueError("Assistant Prompt Token 不是完整训练序列的前缀。")
+        if full_ids[: len(through_ids)] != through_ids:
+            raise ValueError("Assistant Response Token 不是完整训练序列的前缀。")
+        for token_index in range(len(prompt_ids), len(through_ids)):
+            labels[token_index] = full_ids[token_index]
+            supervised_tokens += 1
+    if supervised_tokens == 0:
+        raise ValueError("完整序列没有 Assistant Response Token。")
     return {
         "input_ids": full_ids,
         "attention_mask": [1] * len(full_ids),

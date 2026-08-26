@@ -17,6 +17,7 @@ class ChatMessage(BaseModel):
     role: ChatRole
     content: str = Field(max_length=32768)
     name: str | None = Field(default=None, max_length=128)
+    tool_call_id: str | None = Field(default=None, min_length=1, max_length=128)
 
 
 class GenerateRequest(BaseModel):
@@ -113,6 +114,20 @@ class ChatRequest(BaseModel):
         default=None,
         description="Optional random seed for reproducible sampling.",
     )
+    domain_id: str | None = Field(
+        default=None,
+        min_length=3,
+        max_length=64,
+        pattern=r"^[a-z][a-z0-9_-]{2,63}$",
+        description="Optional private-domain Adapter selected for this request only.",
+    )
+    domain_access_token: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=512,
+        repr=False,
+        description="Authorization token paired with domain_id.",
+    )
 
     @model_validator(mode="after")
     def validate_messages(self) -> ChatRequest:
@@ -120,6 +135,10 @@ class ChatRequest(BaseModel):
             raise ValueError("messages must contain at least one user message.")
         if any(not message.content.strip() for message in self.messages):
             raise ValueError("message content must not be empty.")
+        if (self.domain_id is None) != (self.domain_access_token is None):
+            raise ValueError(
+                "domain_id and domain_access_token must be provided together."
+            )
         return self
 
 
@@ -134,6 +153,7 @@ class ChatResponse(BaseModel):
     generated_tokens: int = Field(ge=0)
     finish_reason: Literal["length", "stop"]
     model: str
+    duration_ms: float = Field(ge=0)
 
 
 class AgentRequest(ChatRequest):
@@ -144,6 +164,11 @@ class AgentRequest(ChatRequest):
         ge=1,
         le=6,
         description="Maximum number of model/tool loop iterations.",
+    )
+    approved_side_effects: list[str] = Field(
+        default_factory=list,
+        max_length=16,
+        description="Approval IDs bound to exact side-effect tool calls.",
     )
 
 
@@ -156,9 +181,25 @@ class AgentTraceResponse(BaseModel):
     call_id: str = Field(min_length=1)
     name: str = Field(min_length=1)
     arguments: dict[str, Any]
-    status: Literal["ok", "error"]
+    status: Literal["ok", "error", "confirmation_required"]
     content: str
     duration_ms: float = Field(ge=0)
+    confirmation_id: str | None = None
+    argument_repaired: bool = False
+    attempts: int = Field(default=1, ge=1, le=2)
+
+
+class AgentEventResponse(BaseModel):
+    """One sanitized model or tool event from the complete Agent trace."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    step: int = Field(ge=1)
+    phase: Literal["model", "tool"]
+    input: Any
+    output: Any
+    duration_ms: float = Field(ge=0)
+    error: str | None = None
 
 
 class AgentResponse(BaseModel):
@@ -171,8 +212,114 @@ class AgentResponse(BaseModel):
     model: str
     steps: int = Field(ge=1)
     tool_calls: int = Field(ge=0)
-    finish_reason: Literal["stop", "max_steps"]
+    finish_reason: Literal[
+        "stop",
+        "max_steps",
+        "confirmation_required",
+        "cancelled",
+        "citation_guard",
+    ]
     trace: list[AgentTraceResponse]
+    events: list[AgentEventResponse] = Field(default_factory=list)
+    run_id: str | None = None
+    route: str | None = None
+    prompt_tokens: int = Field(default=0, ge=0)
+    generated_tokens: int = Field(default=0, ge=0)
+    model_duration_ms: float = Field(default=0, ge=0)
+    tool_duration_ms: float = Field(default=0, ge=0)
+    total_duration_ms: float = Field(default=0, ge=0)
+    allowed_citations: list[str] = Field(default_factory=list)
+    unsupported_citations: list[str] = Field(default_factory=list)
+
+
+class AgentCancelResponse(BaseModel):
+    """Result of requesting cooperative cancellation."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    run_id: str = Field(min_length=1)
+    cancellation_requested: bool
+
+
+class AgentMetricsResponse(BaseModel):
+    """Process-local aggregate Agent service metrics."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    running: int = Field(ge=0)
+    accepted: int = Field(ge=0)
+    completed: int = Field(ge=0)
+    cancelled: int = Field(ge=0)
+    failed: int = Field(ge=0)
+    rejected_busy: int = Field(ge=0)
+    avg_duration_ms: float = Field(ge=0)
+
+
+class MediaUploadRequest(BaseModel):
+    """Base64 upload kept inside the configured multimodal workspace."""
+
+    model_config = ConfigDict(extra="forbid")
+    filename: str = Field(min_length=1, max_length=128)
+    content_base64: str = Field(min_length=1, max_length=72_000_000)
+    overwrite: bool = False
+
+
+class ImageAnalyzeRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    filename: str = Field(min_length=1, max_length=128)
+    include_ocr: bool = True
+
+
+class AudioTranscribeRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    filename: str = Field(min_length=1, max_length=128)
+    language: str | None = Field(default=None, max_length=16)
+
+
+class SpeechSynthesisRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    text: str = Field(min_length=1, max_length=4000)
+    filename: str = Field(min_length=1, max_length=128)
+    rate: int = Field(default=180, ge=80, le=360)
+    overwrite: bool = False
+
+
+class MultimodalCapabilitiesResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    enabled: bool
+    image_metadata: bool
+    ocr: bool
+    asr: bool
+    tts: bool
+
+
+class MediaOperationResponse(BaseModel):
+    """Stable envelope for media upload, OCR, ASR, and TTS results."""
+
+    model_config = ConfigDict(extra="forbid")
+    operation: Literal["upload", "image", "asr", "tts"]
+    result: dict[str, Any]
+
+
+class DomainCatalogResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    enabled: bool
+    domains: list[dict[str, Any]]
+    active_domain: str | None = None
+
+
+class DomainAuthorizationRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    access_token: str = Field(min_length=1, max_length=512)
+
+
+class DomainAuthorizationResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    domain_id: str
+    authorized: bool
+    base_model: str
+    adult_content_enabled: bool
+    activated: bool = False
 
 
 class HealthResponse(BaseModel):

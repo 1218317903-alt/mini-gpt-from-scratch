@@ -34,10 +34,12 @@ class _FakeChatModel:
     is_ready = True
 
     def __init__(self) -> None:
-        self.messages: list[ChatMessage] = []
+        self.messages: list[object] = []
+        self.tools: list[object] = []
 
-    def chat(self, messages, **_: object) -> ChatResult:
+    def chat(self, messages, tools=None, **_: object) -> ChatResult:
         self.messages = list(messages)
+        self.tools = list(tools or [])
         return ChatResult(
             text='{"tool_call":{"name":"calculator","arguments":{"expression":"2+2"}}}',
             prompt_tokens=4,
@@ -70,4 +72,4 @@ def test_adapter_injects_tool_definitions_and_parses_response() -> None:
 
     assert turn.text == ""
     assert turn.tool_calls[0].name == "calculator"
-    assert "calculator" in backend.messages[0].content
+    assert backend.tools[0].name == "calculator"

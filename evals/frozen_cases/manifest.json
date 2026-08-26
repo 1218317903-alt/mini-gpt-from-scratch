@@ -1,0 +1,32 @@
+{
+  "case_count_range": [
+    150,
+    150
+  ],
+  "case_files": {
+    "direct_answer.jsonl": "e55a401428c7c2bfa87303b5db8e34f045b329d97b34f9d2d1e1dc10a3c1feda",
+    "multi_step.jsonl": "d085d894e9577d8a18543d8c1b0c16dd5f1ffd7a7b240b5c40f1aae07a8bdd26",
+    "retrieval.jsonl": "4655531cd16969b58df0cf4763db7133347de9a9f7da1dfe297a8709d9f00e85",
+    "tool_arguments.jsonl": "9a994e7f5754cad1a7d96b65a82ff3e8f9450996fe7743cd4c9c762d586aa45a",
+    "tool_selection.jsonl": "a291f8bd6cfac55be2a44956d610d8ab7fa50f20cc0c1684d6b71b330b235cb1"
+  },
+  "expected_counts": {
+    "direct_answer": 30,
+    "multi_step": 20,
+    "retrieval": 30,
+    "tool_arguments": 25,
+    "tool_selection": 45
+  },
+  "fingerprint": "06fde3d735893adcbc37f52da6c48e6573e5366b3289a5459b228c6918790444",
+  "frozen": true,
+  "provenance": "P1 candidate reviewed and approved by project owner Li Linzhi (李林知).",
+  "purpose": "Release-only generalization test; never use for prompt or SFT tuning.",
+  "review": {
+    "reviewer": "李林知",
+    "signed_at": "2026-08-25",
+    "status": "approved"
+  },
+  "schema_version": 1,
+  "split": "frozen_test",
+  "version": "agent-frozen-test-v1"
+}

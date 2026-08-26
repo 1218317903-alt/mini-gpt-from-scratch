@@ -34,6 +34,11 @@ class ModelConfig:
     num_layers: int
     expansion_factor: int
     tie_weights: bool
+    position_encoding: str = "learned"
+    norm: str = "layernorm"
+    activation: str = "gelu"
+    attention_backend: str = "manual"
+    qkv_projection: str = "separate"
 
 
 @dataclass(frozen=True)
@@ -155,12 +160,45 @@ def load_model_config(path: Path) -> ModelConfig:
     if values["embedding_dim"] % values["num_heads"] != 0:
         raise ValueError("embedding_dim 必须能被 num_heads 整除。")
 
+    string_choices = {
+        "position_encoding": {"learned", "rope"},
+        "norm": {"layernorm", "rmsnorm"},
+        "activation": {"gelu", "swiglu"},
+        "attention_backend": {"manual", "sdpa"},
+        "qkv_projection": {"separate", "fused"},
+    }
+    selected: dict[str, str] = {}
+    for name, allowed in string_choices.items():
+        default = next(iter(allowed))
+        defaults = {
+            "position_encoding": "learned",
+            "norm": "layernorm",
+            "activation": "gelu",
+            "attention_backend": "manual",
+            "qkv_projection": "separate",
+        }
+        value = model.get(name, defaults.get(name, default))
+        if not isinstance(value, str) or value not in allowed:
+            options = ", ".join(sorted(allowed))
+            raise ValueError(f"{name} 必须是以下值之一：{options}。")
+        selected[name] = value
+    if (
+        selected["position_encoding"] == "rope"
+        and values["embedding_dim"] // values["num_heads"] % 2 != 0
+    ):
+        raise ValueError("RoPE 要求 head_dim 为偶数。")
+
     return ModelConfig(
         embedding_dim=values["embedding_dim"],
         num_heads=values["num_heads"],
         num_layers=values["num_layers"],
         expansion_factor=values["expansion_factor"],
         tie_weights=tie_weights,
+        position_encoding=selected["position_encoding"],
+        norm=selected["norm"],
+        activation=selected["activation"],
+        attention_backend=selected["attention_backend"],
+        qkv_projection=selected["qkv_projection"],
     )
 
 

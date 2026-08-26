@@ -1,0 +1,1071 @@
+{
+  "case_count": 100,
+  "exact_tool_set_accuracy": 1.0,
+  "required_tool_recall": 1.0,
+  "no_tool_accuracy": 1.0,
+  "failures": [],
+  "predictions": [
+    {
+      "case_id": "da-001",
+      "expected": [],
+      "actual": [],
+      "route": "direct",
+      "matched": true,
+      "reason": "No explicit tool signal matched; answer without exposing tools."
+    },
+    {
+      "case_id": "da-002",
+      "expected": [],
+      "actual": [],
+      "route": "direct",
+      "matched": true,
+      "reason": "No explicit tool signal matched; answer without exposing tools."
+    },
+    {
+      "case_id": "da-003",
+      "expected": [],
+      "actual": [],
+      "route": "direct",
+      "matched": true,
+      "reason": "No explicit tool signal matched; answer without exposing tools."
+    },
+    {
+      "case_id": "da-004",
+      "expected": [],
+      "actual": [],
+      "route": "direct",
+      "matched": true,
+      "reason": "No explicit tool signal matched; answer without exposing tools."
+    },
+    {
+      "case_id": "da-005",
+      "expected": [],
+      "actual": [],
+      "route": "direct",
+      "matched": true,
+      "reason": "No explicit tool signal matched; answer without exposing tools."
+    },
+    {
+      "case_id": "da-006",
+      "expected": [],
+      "actual": [],
+      "route": "direct",
+      "matched": true,
+      "reason": "No explicit tool signal matched; answer without exposing tools."
+    },
+    {
+      "case_id": "da-007",
+      "expected": [],
+      "actual": [],
+      "route": "direct",
+      "matched": true,
+      "reason": "No explicit tool signal matched; answer without exposing tools."
+    },
+    {
+      "case_id": "da-008",
+      "expected": [],
+      "actual": [],
+      "route": "direct",
+      "matched": true,
+      "reason": "No explicit tool signal matched; answer without exposing tools."
+    },
+    {
+      "case_id": "da-009",
+      "expected": [],
+      "actual": [],
+      "route": "direct",
+      "matched": true,
+      "reason": "No explicit tool signal matched; answer without exposing tools."
+    },
+    {
+      "case_id": "da-010",
+      "expected": [],
+      "actual": [],
+      "route": "direct",
+      "matched": true,
+      "reason": "No explicit tool signal matched; answer without exposing tools."
+    },
+    {
+      "case_id": "da-011",
+      "expected": [],
+      "actual": [],
+      "route": "direct",
+      "matched": true,
+      "reason": "No explicit tool signal matched; answer without exposing tools."
+    },
+    {
+      "case_id": "da-012",
+      "expected": [],
+      "actual": [],
+      "route": "direct",
+      "matched": true,
+      "reason": "No explicit tool signal matched; answer without exposing tools."
+    },
+    {
+      "case_id": "da-013",
+      "expected": [],
+      "actual": [],
+      "route": "direct",
+      "matched": true,
+      "reason": "No explicit tool signal matched; answer without exposing tools."
+    },
+    {
+      "case_id": "da-014",
+      "expected": [],
+      "actual": [],
+      "route": "direct",
+      "matched": true,
+      "reason": "No explicit tool signal matched; answer without exposing tools."
+    },
+    {
+      "case_id": "da-015",
+      "expected": [],
+      "actual": [],
+      "route": "direct",
+      "matched": true,
+      "reason": "No explicit tool signal matched; answer without exposing tools."
+    },
+    {
+      "case_id": "da-016",
+      "expected": [],
+      "actual": [],
+      "route": "direct",
+      "matched": true,
+      "reason": "No explicit tool signal matched; answer without exposing tools."
+    },
+    {
+      "case_id": "da-017",
+      "expected": [],
+      "actual": [],
+      "route": "direct",
+      "matched": true,
+      "reason": "No explicit tool signal matched; answer without exposing tools."
+    },
+    {
+      "case_id": "da-018",
+      "expected": [],
+      "actual": [],
+      "route": "direct",
+      "matched": true,
+      "reason": "No explicit tool signal matched; answer without exposing tools."
+    },
+    {
+      "case_id": "da-019",
+      "expected": [],
+      "actual": [],
+      "route": "direct",
+      "matched": true,
+      "reason": "No explicit tool signal matched; answer without exposing tools."
+    },
+    {
+      "case_id": "da-020",
+      "expected": [],
+      "actual": [],
+      "route": "direct",
+      "matched": true,
+      "reason": "No explicit tool signal matched; answer without exposing tools."
+    },
+    {
+      "case_id": "ms-001",
+      "expected": [
+        "calculator"
+      ],
+      "actual": [
+        "calculator"
+      ],
+      "route": "calculator",
+      "matched": true,
+      "reason": "The request explicitly asks for a numeric calculation."
+    },
+    {
+      "case_id": "ms-002",
+      "expected": [
+        "calculator"
+      ],
+      "actual": [
+        "calculator"
+      ],
+      "route": "calculator",
+      "matched": true,
+      "reason": "The request explicitly asks for a numeric calculation."
+    },
+    {
+      "case_id": "ms-003",
+      "expected": [
+        "current_time"
+      ],
+      "actual": [
+        "current_time"
+      ],
+      "route": "current_time",
+      "matched": true,
+      "reason": "The request asks for the current time in a concrete timezone."
+    },
+    {
+      "case_id": "ms-004",
+      "expected": [
+        "current_time"
+      ],
+      "actual": [
+        "current_time"
+      ],
+      "route": "current_time",
+      "matched": true,
+      "reason": "The request asks for the current time in a concrete timezone."
+    },
+    {
+      "case_id": "ms-005",
+      "expected": [
+        "calculator"
+      ],
+      "actual": [
+        "calculator"
+      ],
+      "route": "calculator",
+      "matched": true,
+      "reason": "The request explicitly asks for a numeric calculation."
+    },
+    {
+      "case_id": "ms-006",
+      "expected": [
+        "search_docs"
+      ],
+      "actual": [
+        "search_docs"
+      ],
+      "route": "retrieval",
+      "matched": true,
+      "reason": "The request refers to supplied documents or a named private corpus."
+    },
+    {
+      "case_id": "ms-007",
+      "expected": [
+        "calculator",
+        "search_docs"
+      ],
+      "actual": [
+        "calculator",
+        "search_docs"
+      ],
+      "route": "multi_step",
+      "matched": true,
+      "reason": "The request contains signals for multiple explicit tool capabilities."
+    },
+    {
+      "case_id": "ms-008",
+      "expected": [
+        "search_docs"
+      ],
+      "actual": [
+        "search_docs"
+      ],
+      "route": "retrieval",
+      "matched": true,
+      "reason": "The request refers to supplied documents or a named private corpus."
+    },
+    {
+      "case_id": "ms-009",
+      "expected": [
+        "search_docs"
+      ],
+      "actual": [
+        "search_docs"
+      ],
+      "route": "retrieval",
+      "matched": true,
+      "reason": "The request refers to supplied documents or a named private corpus."
+    },
+    {
+      "case_id": "ms-010",
+      "expected": [
+        "search_docs"
+      ],
+      "actual": [
+        "search_docs"
+      ],
+      "route": "retrieval",
+      "matched": true,
+      "reason": "The request refers to supplied documents or a named private corpus."
+    },
+    {
+      "case_id": "ms-011",
+      "expected": [
+        "calculator"
+      ],
+      "actual": [
+        "calculator"
+      ],
+      "route": "calculator",
+      "matched": true,
+      "reason": "The request explicitly asks for a numeric calculation."
+    },
+    {
+      "case_id": "ms-012",
+      "expected": [
+        "current_time"
+      ],
+      "actual": [
+        "current_time"
+      ],
+      "route": "current_time",
+      "matched": true,
+      "reason": "The request asks for the current time in a concrete timezone."
+    },
+    {
+      "case_id": "ms-013",
+      "expected": [
+        "calculator"
+      ],
+      "actual": [
+        "calculator"
+      ],
+      "route": "calculator",
+      "matched": true,
+      "reason": "The request explicitly asks for a numeric calculation."
+    },
+    {
+      "case_id": "ms-014",
+      "expected": [
+        "search_docs"
+      ],
+      "actual": [
+        "search_docs"
+      ],
+      "route": "retrieval",
+      "matched": true,
+      "reason": "The request refers to supplied documents or a named private corpus."
+    },
+    {
+      "case_id": "ms-015",
+      "expected": [
+        "search_docs"
+      ],
+      "actual": [
+        "search_docs"
+      ],
+      "route": "retrieval",
+      "matched": true,
+      "reason": "The request refers to supplied documents or a named private corpus."
+    },
+    {
+      "case_id": "rt-001",
+      "expected": [
+        "search_docs"
+      ],
+      "actual": [
+        "search_docs"
+      ],
+      "route": "retrieval",
+      "matched": true,
+      "reason": "The request refers to supplied documents or a named private corpus."
+    },
+    {
+      "case_id": "rt-002",
+      "expected": [
+        "search_docs"
+      ],
+      "actual": [
+        "search_docs"
+      ],
+      "route": "retrieval",
+      "matched": true,
+      "reason": "The request refers to supplied documents or a named private corpus."
+    },
+    {
+      "case_id": "rt-003",
+      "expected": [
+        "search_docs"
+      ],
+      "actual": [
+        "search_docs"
+      ],
+      "route": "retrieval",
+      "matched": true,
+      "reason": "The request refers to supplied documents or a named private corpus."
+    },
+    {
+      "case_id": "rt-004",
+      "expected": [
+        "search_docs"
+      ],
+      "actual": [
+        "search_docs"
+      ],
+      "route": "retrieval",
+      "matched": true,
+      "reason": "The request refers to supplied documents or a named private corpus."
+    },
+    {
+      "case_id": "rt-005",
+      "expected": [
+        "search_docs"
+      ],
+      "actual": [
+        "search_docs"
+      ],
+      "route": "retrieval",
+      "matched": true,
+      "reason": "The request refers to supplied documents or a named private corpus."
+    },
+    {
+      "case_id": "rt-006",
+      "expected": [
+        "search_docs"
+      ],
+      "actual": [
+        "search_docs"
+      ],
+      "route": "retrieval",
+      "matched": true,
+      "reason": "The request refers to supplied documents or a named private corpus."
+    },
+    {
+      "case_id": "rt-007",
+      "expected": [
+        "search_docs"
+      ],
+      "actual": [
+        "search_docs"
+      ],
+      "route": "retrieval",
+      "matched": true,
+      "reason": "The request refers to supplied documents or a named private corpus."
+    },
+    {
+      "case_id": "rt-008",
+      "expected": [
+        "search_docs"
+      ],
+      "actual": [
+        "search_docs"
+      ],
+      "route": "retrieval",
+      "matched": true,
+      "reason": "The request refers to supplied documents or a named private corpus."
+    },
+    {
+      "case_id": "rt-009",
+      "expected": [
+        "search_docs"
+      ],
+      "actual": [
+        "search_docs"
+      ],
+      "route": "retrieval",
+      "matched": true,
+      "reason": "The request refers to supplied documents or a named private corpus."
+    },
+    {
+      "case_id": "rt-010",
+      "expected": [
+        "search_docs"
+      ],
+      "actual": [
+        "search_docs"
+      ],
+      "route": "retrieval",
+      "matched": true,
+      "reason": "The request refers to supplied documents or a named private corpus."
+    },
+    {
+      "case_id": "rt-011",
+      "expected": [
+        "search_docs"
+      ],
+      "actual": [
+        "search_docs"
+      ],
+      "route": "retrieval",
+      "matched": true,
+      "reason": "The request refers to supplied documents or a named private corpus."
+    },
+    {
+      "case_id": "rt-012",
+      "expected": [
+        "search_docs"
+      ],
+      "actual": [
+        "search_docs"
+      ],
+      "route": "retrieval",
+      "matched": true,
+      "reason": "The request refers to supplied documents or a named private corpus."
+    },
+    {
+      "case_id": "rt-013",
+      "expected": [
+        "search_docs"
+      ],
+      "actual": [
+        "search_docs"
+      ],
+      "route": "retrieval",
+      "matched": true,
+      "reason": "The request refers to supplied documents or a named private corpus."
+    },
+    {
+      "case_id": "rt-014",
+      "expected": [
+        "search_docs"
+      ],
+      "actual": [
+        "search_docs"
+      ],
+      "route": "retrieval",
+      "matched": true,
+      "reason": "The request refers to supplied documents or a named private corpus."
+    },
+    {
+      "case_id": "rt-015",
+      "expected": [
+        "search_docs"
+      ],
+      "actual": [
+        "search_docs"
+      ],
+      "route": "retrieval",
+      "matched": true,
+      "reason": "The request refers to supplied documents or a named private corpus."
+    },
+    {
+      "case_id": "ta-001",
+      "expected": [
+        "current_time"
+      ],
+      "actual": [
+        "current_time"
+      ],
+      "route": "current_time",
+      "matched": true,
+      "reason": "The request asks for the current time in a concrete timezone."
+    },
+    {
+      "case_id": "ta-002",
+      "expected": [
+        "calculator"
+      ],
+      "actual": [
+        "calculator"
+      ],
+      "route": "calculator",
+      "matched": true,
+      "reason": "The request explicitly asks for a numeric calculation."
+    },
+    {
+      "case_id": "ta-003",
+      "expected": [
+        "current_time"
+      ],
+      "actual": [
+        "current_time"
+      ],
+      "route": "current_time",
+      "matched": true,
+      "reason": "The request asks for the current time in a concrete timezone."
+    },
+    {
+      "case_id": "ta-004",
+      "expected": [
+        "calculator"
+      ],
+      "actual": [
+        "calculator"
+      ],
+      "route": "calculator",
+      "matched": true,
+      "reason": "The request explicitly asks for a numeric calculation."
+    },
+    {
+      "case_id": "ta-005",
+      "expected": [
+        "current_time"
+      ],
+      "actual": [
+        "current_time"
+      ],
+      "route": "current_time",
+      "matched": true,
+      "reason": "The request asks for the current time in a concrete timezone."
+    },
+    {
+      "case_id": "ta-006",
+      "expected": [
+        "calculator"
+      ],
+      "actual": [
+        "calculator"
+      ],
+      "route": "calculator",
+      "matched": true,
+      "reason": "The request explicitly asks for a numeric calculation."
+    },
+    {
+      "case_id": "ta-007",
+      "expected": [
+        "calculator"
+      ],
+      "actual": [
+        "calculator"
+      ],
+      "route": "calculator",
+      "matched": true,
+      "reason": "The request explicitly asks for a numeric calculation."
+    },
+    {
+      "case_id": "ta-008",
+      "expected": [
+        "current_time"
+      ],
+      "actual": [
+        "current_time"
+      ],
+      "route": "current_time",
+      "matched": true,
+      "reason": "The request asks for the current time in a concrete timezone."
+    },
+    {
+      "case_id": "ta-009",
+      "expected": [
+        "calculator"
+      ],
+      "actual": [
+        "calculator"
+      ],
+      "route": "calculator",
+      "matched": true,
+      "reason": "The request explicitly asks for a numeric calculation."
+    },
+    {
+      "case_id": "ta-010",
+      "expected": [
+        "calculator"
+      ],
+      "actual": [
+        "calculator"
+      ],
+      "route": "calculator",
+      "matched": true,
+      "reason": "The request explicitly asks for a numeric calculation."
+    },
+    {
+      "case_id": "ta-011",
+      "expected": [
+        "calculator"
+      ],
+      "actual": [
+        "calculator"
+      ],
+      "route": "calculator",
+      "matched": true,
+      "reason": "The request explicitly asks for a numeric calculation."
+    },
+    {
+      "case_id": "ta-012",
+      "expected": [
+        "current_time"
+      ],
+      "actual": [
+        "current_time"
+      ],
+      "route": "current_time",
+      "matched": true,
+      "reason": "The request asks for the current time in a concrete timezone."
+    },
+    {
+      "case_id": "ta-013",
+      "expected": [
+        "calculator"
+      ],
+      "actual": [
+        "calculator"
+      ],
+      "route": "calculator",
+      "matched": true,
+      "reason": "The request explicitly asks for a numeric calculation."
+    },
+    {
+      "case_id": "ta-014",
+      "expected": [
+        "current_time"
+      ],
+      "actual": [
+        "current_time"
+      ],
+      "route": "current_time",
+      "matched": true,
+      "reason": "The request asks for the current time in a concrete timezone."
+    },
+    {
+      "case_id": "ta-015",
+      "expected": [
+        "calculator"
+      ],
+      "actual": [
+        "calculator"
+      ],
+      "route": "calculator",
+      "matched": true,
+      "reason": "The request explicitly asks for a numeric calculation."
+    },
+    {
+      "case_id": "ts-001",
+      "expected": [
+        "calculator"
+      ],
+      "actual": [
+        "calculator"
+      ],
+      "route": "calculator",
+      "matched": true,
+      "reason": "The request explicitly asks for a numeric calculation."
+    },
+    {
+      "case_id": "ts-002",
+      "expected": [
+        "calculator"
+      ],
+      "actual": [
+        "calculator"
+      ],
+      "route": "calculator",
+      "matched": true,
+      "reason": "The request explicitly asks for a numeric calculation."
+    },
+    {
+      "case_id": "ts-003",
+      "expected": [
+        "calculator"
+      ],
+      "actual": [
+        "calculator"
+      ],
+      "route": "calculator",
+      "matched": true,
+      "reason": "The request explicitly asks for a numeric calculation."
+    },
+    {
+      "case_id": "ts-004",
+      "expected": [
+        "calculator"
+      ],
+      "actual": [
+        "calculator"
+      ],
+      "route": "calculator",
+      "matched": true,
+      "reason": "The request explicitly asks for a numeric calculation."
+    },
+    {
+      "case_id": "ts-005",
+      "expected": [
+        "current_time"
+      ],
+      "actual": [
+        "current_time"
+      ],
+      "route": "current_time",
+      "matched": true,
+      "reason": "The request asks for the current time in a concrete timezone."
+    },
+    {
+      "case_id": "ts-006",
+      "expected": [
+        "current_time"
+      ],
+      "actual": [
+        "current_time"
+      ],
+      "route": "current_time",
+      "matched": true,
+      "reason": "The request asks for the current time in a concrete timezone."
+    },
+    {
+      "case_id": "ts-007",
+      "expected": [
+        "calculator"
+      ],
+      "actual": [
+        "calculator"
+      ],
+      "route": "calculator",
+      "matched": true,
+      "reason": "The request explicitly asks for a numeric calculation."
+    },
+    {
+      "case_id": "ts-008",
+      "expected": [
+        "calculator"
+      ],
+      "actual": [
+        "calculator"
+      ],
+      "route": "calculator",
+      "matched": true,
+      "reason": "The request explicitly asks for a numeric calculation."
+    },
+    {
+      "case_id": "ts-009",
+      "expected": [
+        "calculator"
+      ],
+      "actual": [
+        "calculator"
+      ],
+      "route": "calculator",
+      "matched": true,
+      "reason": "The request explicitly asks for a numeric calculation."
+    },
+    {
+      "case_id": "ts-010",
+      "expected": [
+        "calculator"
+      ],
+      "actual": [
+        "calculator"
+      ],
+      "route": "calculator",
+      "matched": true,
+      "reason": "The request explicitly asks for a numeric calculation."
+    },
+    {
+      "case_id": "ts-011",
+      "expected": [
+        "calculator"
+      ],
+      "actual": [
+        "calculator"
+      ],
+      "route": "calculator",
+      "matched": true,
+      "reason": "The request explicitly asks for a numeric calculation."
+    },
+    {
+      "case_id": "ts-012",
+      "expected": [
+        "current_time"
+      ],
+      "actual": [
+        "current_time"
+      ],
+      "route": "current_time",
+      "matched": true,
+      "reason": "The request asks for the current time in a concrete timezone."
+    },
+    {
+      "case_id": "ts-013",
+      "expected": [
+        "calculator"
+      ],
+      "actual": [
+        "calculator"
+      ],
+      "route": "calculator",
+      "matched": true,
+      "reason": "The request explicitly asks for a numeric calculation."
+    },
+    {
+      "case_id": "ts-014",
+      "expected": [
+        "calculator"
+      ],
+      "actual": [
+        "calculator"
+      ],
+      "route": "calculator",
+      "matched": true,
+      "reason": "The request explicitly asks for a numeric calculation."
+    },
+    {
+      "case_id": "ts-015",
+      "expected": [
+        "calculator"
+      ],
+      "actual": [
+        "calculator"
+      ],
+      "route": "calculator",
+      "matched": true,
+      "reason": "The request explicitly asks for a numeric calculation."
+    },
+    {
+      "case_id": "ts-016",
+      "expected": [
+        "current_time"
+      ],
+      "actual": [
+        "current_time"
+      ],
+      "route": "current_time",
+      "matched": true,
+      "reason": "The request asks for the current time in a concrete timezone."
+    },
+    {
+      "case_id": "ts-017",
+      "expected": [
+        "calculator"
+      ],
+      "actual": [
+        "calculator"
+      ],
+      "route": "calculator",
+      "matched": true,
+      "reason": "The request explicitly asks for a numeric calculation."
+    },
+    {
+      "case_id": "ts-018",
+      "expected": [
+        "calculator"
+      ],
+      "actual": [
+        "calculator"
+      ],
+      "route": "calculator",
+      "matched": true,
+      "reason": "The request explicitly asks for a numeric calculation."
+    },
+    {
+      "case_id": "ts-019",
+      "expected": [
+        "current_time"
+      ],
+      "actual": [
+        "current_time"
+      ],
+      "route": "current_time",
+      "matched": true,
+      "reason": "The request asks for the current time in a concrete timezone."
+    },
+    {
+      "case_id": "ts-020",
+      "expected": [
+        "calculator"
+      ],
+      "actual": [
+        "calculator"
+      ],
+      "route": "calculator",
+      "matched": true,
+      "reason": "The request explicitly asks for a numeric calculation."
+    },
+    {
+      "case_id": "ts-d-001",
+      "expected": [],
+      "actual": [],
+      "route": "direct",
+      "matched": true,
+      "reason": "The request asks for explanation or judgment rather than live data."
+    },
+    {
+      "case_id": "ts-d-002",
+      "expected": [],
+      "actual": [],
+      "route": "direct",
+      "matched": true,
+      "reason": "The request asks for explanation or judgment rather than live data."
+    },
+    {
+      "case_id": "ts-d-003",
+      "expected": [],
+      "actual": [],
+      "route": "direct",
+      "matched": true,
+      "reason": "The request asks for explanation or judgment rather than live data."
+    },
+    {
+      "case_id": "ts-d-004",
+      "expected": [],
+      "actual": [],
+      "route": "direct",
+      "matched": true,
+      "reason": "The request asks for explanation or judgment rather than live data."
+    },
+    {
+      "case_id": "ts-d-005",
+      "expected": [],
+      "actual": [],
+      "route": "direct",
+      "matched": true,
+      "reason": "The request asks for explanation or judgment rather than live data."
+    },
+    {
+      "case_id": "ts-d-006",
+      "expected": [],
+      "actual": [],
+      "route": "direct",
+      "matched": true,
+      "reason": "The request asks for explanation or judgment rather than live data."
+    },
+    {
+      "case_id": "ts-d-007",
+      "expected": [],
+      "actual": [],
+      "route": "direct",
+      "matched": true,
+      "reason": "The request asks for explanation or judgment rather than live data."
+    },
+    {
+      "case_id": "ts-d-008",
+      "expected": [],
+      "actual": [],
+      "route": "direct",
+      "matched": true,
+      "reason": "The request asks for explanation or judgment rather than live data."
+    },
+    {
+      "case_id": "ts-d-009",
+      "expected": [],
+      "actual": [],
+      "route": "direct",
+      "matched": true,
+      "reason": "The request asks for explanation or judgment rather than live data."
+    },
+    {
+      "case_id": "ts-d-010",
+      "expected": [],
+      "actual": [],
+      "route": "direct",
+      "matched": true,
+      "reason": "The request asks for explanation or judgment rather than live data."
+    },
+    {
+      "case_id": "ts-d-011",
+      "expected": [],
+      "actual": [],
+      "route": "direct",
+      "matched": true,
+      "reason": "The request asks for explanation or judgment rather than live data."
+    },
+    {
+      "case_id": "ts-d-012",
+      "expected": [],
+      "actual": [],
+      "route": "direct",
+      "matched": true,
+      "reason": "The request asks for explanation or judgment rather than live data."
+    },
+    {
+      "case_id": "ts-d-013",
+      "expected": [],
+      "actual": [],
+      "route": "direct",
+      "matched": true,
+      "reason": "The request asks for explanation or judgment rather than live data."
+    },
+    {
+      "case_id": "ts-d-014",
+      "expected": [],
+      "actual": [],
+      "route": "direct",
+      "matched": true,
+      "reason": "The request asks for explanation or judgment rather than live data."
+    },
+    {
+      "case_id": "ts-d-015",
+      "expected": [],
+      "actual": [],
+      "route": "direct",
+      "matched": true,
+      "reason": "The request asks for explanation or judgment rather than live data."
+    }
+  ]
+}

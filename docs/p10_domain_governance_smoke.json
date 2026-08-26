@@ -1,0 +1,44 @@
+{
+  "date": "2026-08-25",
+  "author": "李林知",
+  "status": "governance_smoke_no_adapter_training",
+  "standard_dataset": {
+    "domain_id": "standard_smoke",
+    "records": 1,
+    "duplicate_ids": [],
+    "prohibited_records": [],
+    "privacy_records": 0,
+    "adult_policy_records": 0,
+    "valid": true
+  },
+  "adult_safe_dataset": {
+    "domain_id": "adult_smoke",
+    "records": 1,
+    "duplicate_ids": [],
+    "prohibited_records": [],
+    "privacy_records": 0,
+    "adult_policy_records": 1,
+    "valid": true
+  },
+  "adult_prohibited_dataset": {
+    "domain_id": "adult_smoke",
+    "records": 1,
+    "duplicate_ids": [],
+    "prohibited_records": [
+      "adult-unsafe-1"
+    ],
+    "privacy_records": 0,
+    "adult_policy_records": 1,
+    "valid": false
+  },
+  "unauthorized_denied": true,
+  "authorized_domain": "standard_smoke",
+  "catalog_hides_paths_and_tokens": true,
+  "default_public_model_modified": false,
+  "limitations": [
+    "本实验只验证 manifest、路径隔离、Token 授权与数据门禁，没有训练领域 Adapter。",
+    "关键词门禁只是第一层静态检查，正式数据还需要人工、法律和隐私审核。",
+    "成人模板默认关闭，不包含语料和权重，不能据此宣称已具备成人生成质量。",
+    "Adapter 激活是进程级状态；生产环境应按租户隔离 worker，避免跨请求状态泄漏。"
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "domain_id": "private_example",
+  "display_name": "私有领域示例",
+  "description": "默认关闭的独立 Adapter 模板，不修改公开默认模型。",
+  "base_model": "Qwen/Qwen2.5-3B-Instruct",
+  "adapter_path": "adapters/private_example",
+  "dataset_path": "datasets/private_example.jsonl",
+  "enabled": false,
+  "access_mode": "private",
+  "access_token_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "data_classification": "confidential",
+  "adult_content_enabled": false,
+  "minimum_age": null,
+  "require_consent_attestation": true,
+  "allowed_capabilities": ["text"],
+  "license_summary": "Replace with verified provenance and license before use."
+}
