@@ -24,6 +24,9 @@ evals/results/*.jsonl
 evals/results/*_report.json
 output/*
 !output/.gitkeep
+*.db
+*.db-shm
+*.db-wal
 review_input.docx
 data/raw/*
 data/processed/*
