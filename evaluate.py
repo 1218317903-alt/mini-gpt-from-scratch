@@ -14,7 +14,7 @@ from minigpt.config import (
 from minigpt.dataset import build_language_model_dataset
 from minigpt.model import MiniGPT
 from minigpt.tokenizer import load_tokenizer
-from minigpt.trainer import evaluate_loss
+from minigpt.trainer import evaluate_metrics
 from minigpt.utils import (
     checkpoint_config_value,
     compile_model,
@@ -212,18 +212,23 @@ def main() -> None:
         mode=args.compile_mode,
     )
 
-    validation_loss = evaluate_loss(
+    metrics = evaluate_metrics(
         model=execution_model,
         data_loader=data_loader,
         device=device,
         max_batches=training_config.eval_steps,
+        byte_count=len(text.encode("utf-8")),
     )
 
     print(f"device: {device}")
     print(f"split: {args.split}")
     print(f"checkpoint: {checkpoint_path}")
     print(f"global_step: {checkpoint['global_step']}")
-    print(f"loss: {validation_loss:.4f}")
+    print(f"loss: {metrics.loss:.4f}")
+    print(f"bits_per_token: {metrics.bits_per_token:.4f}")
+    if metrics.bpb_utf8 is not None:
+        print(f"bpb_utf8: {metrics.bpb_utf8:.4f}")
+    print(f"token_count: {metrics.token_count}")
 
 
 if __name__ == "__main__":

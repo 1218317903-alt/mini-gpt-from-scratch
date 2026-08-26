@@ -26,6 +26,17 @@ Tiny Shakespeare 正式基线固定 818,432 个参数、seed 42、2,000 步和 4
 
 这些是单 seed、本机实验；仓库明确保留这一限制，不把结果外推到其他模型和硬件。
 
+### 现代 BPE 线与结构对照
+
+在同一份 Tiny Shakespeare BPE 数据、有效 Batch 64 和 BF16 配方下，现代 BPE 基线与
+QK Norm + GQA 均完成了 2,000 步随机 Batch 控制实验。普通基线的测试 Loss/BPB 为
+3.8696/2.6783，QK Norm + GQA 为 4.0984/2.8367；后者参数量减少 8.23%，但本机训练
+吞吐低 8.72%。因此 GQA 当前保留为可选结构，默认仍使用质量和单卡吞吐更好的普通基线。
+
+随后增加的完整验证集 Early Stopping 实验表明，基线最佳点在 step 250、step 400 停止，
+GQA 最佳点在 step 200、step 350 停止。完整配置、验证曲线、测试 BPB、显存和复现命令
+见 [现代架构与 Early Stopping 报告](docs/modern_architecture_early_stopping_2026-08-26.md)。
+
 - [FP32 基线报告](docs/tiny_shakespeare_baseline.md)
 - [FP32 / FP16 / BF16 对照](docs/mixed_precision_comparison.md)
 - [固定 LR / Warmup / Cosine 对照](docs/learning_rate_schedule_comparison.md)
@@ -51,6 +62,7 @@ Tiny Shakespeare 正式基线固定 818,432 个参数、seed 42、2,000 步和 4
 - [分布式训练课程：DDP、FSDP 与硬件边界](docs/distributed_training_course.md)
 - [0.5B DPO 真实 smoke 证据](docs/dpo_smoke_2026-08-26.json)
 - [CPU/Gloo 双进程 DDP smoke 证据](docs/ddp_cpu_smoke_2026-08-26.json)
+- [现代架构与 Early Stopping 对照](docs/modern_architecture_early_stopping_2026-08-26.md)
 
 ### P0–P5 纯文本 Agent 冻结结果
 
@@ -86,10 +98,11 @@ P7 提供六个受控 Word/PDF 工具。最终项目报告同时导出 DOCX/PDF�
 ### P8–P10 现代架构、多模态与私有领域控制面
 
 P8 在保持经典配置兼容的前提下加入 RoPE、RMSNorm、SwiGLU、PyTorch SDPA、fused QKV、
-教学型 BPE 和样本 packing。固定 307,200 Token 的受控短预算中，SDPA 吞吐提高 21.40%，
-fused QKV 提高 15.55%；组合现代配置反而下降 26.13%。所有变体都只是在同一固定 Batch 上
-过拟合，验证 Loss 变差，因此这里只形成 kernel/架构结论，不宣称精度提高。BPE 在 100,000
-字符样本上减少 48.656% Token，但尚未做同字符预算的正式 BPB 对照。
+教学型 BPE 和样本 packing。早期固定 Batch 结果只用于 kernel/架构路径检查；随后已补充
+同一 BPE 数据和随机 Batch 的 2,000 步基线/GQA 对照，以及完整验证集 Early Stopping。
+当前结论是：普通现代基线在本机测试 Loss、BPB、吞吐和峰值显存上更适合作为默认，GQA
+作为减少 KV 头数的可选路径保留。BPE 在 100,000 字符样本上的 48.656% 压缩与正式训练
+结果分开记录，避免把序列压缩直接等同于质量提升。
 
 P9 完成受控上传、图片 OCR、WAV ASR、离线 TTS、Agent 工具与 HTTP 接口，并使用真实本地
 模型完成单行印刷体图片和系统合成短英文 smoke。热路径 OCR/ASR 分别约 75.56/74.09ms，
@@ -403,7 +416,9 @@ D 盘，合计硬上限 40GB。
   可靠性回归，没有重跑 frozen，因此尚不适合生产使用。
 - P7 支持结构化报告，不支持任意 Office 模板编辑或修订批注；P9 OCR 也不等于扫描版
   Office/PDF 的版面理解与结构恢复。
-- P8 尚未完成 2,000 步随机 Batch 的同预算正式实验；短预算结果不能作为质量提升证据。
+- P8 已完成同一 BPE 数据上的 2,000 步随机 Batch 架构对照和完整验证集 Early Stopping；
+  结果仍是单 seed、单机、小语料证据，不能外推为通用质量结论。当前主要限制是语料规模，
+  以及尚未在多 seed、相同字符/FLOPs 预算下做更大规模复验。
 - P9 当前是 OCR/ASR/TTS 级联，不是端到端视觉语言或语音到语音模型；真实噪声鲁棒性未知。
 - P10 尚未训练真实私有领域 Adapter；单进程请求已经隔离，但仍没有多进程租户 worker、
   外部鉴权或合规审计服务。

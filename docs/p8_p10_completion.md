@@ -72,8 +72,9 @@ SwiGLU 增加约 30.6% 参数，加上当前小序列下 RoPE/Python 开销抵�
 
 在训练文本前 100,000 个字符上，字符词表为 66；BPE 词表 256，编码后为 51,344 Token，
 平均 1.9476 字符/Token，Token 数减少 48.656%，decode roundtrip 完全一致。这只证明压缩，
-尚未证明相同字符/FLOPs 预算下的 BPB 更好；下一轮正式 P8 训练应使用随机 batch 和相同字符
-预算比较验证 BPB。
+不单独等同于质量提升。后续已补充同一 BPE 数据上的随机 Batch 对照和完整验证集 Early
+Stopping；由于仍是单 seed、小语料，结果只用于本机架构选择。完整数字见
+[`modern_architecture_early_stopping_2026-08-26.md`](modern_architecture_early_stopping_2026-08-26.md)。
 
 证据：`docs/p8_architecture_benchmark.json`。
 
@@ -167,8 +168,9 @@ dataset report 失败。
 
 ## 5. 当前结论
 
-- P8：组件、训练/评估/服务兼容、测试和 300 步受控实验完成；2,000 步随机 batch 的现代
-  配方正式泛化实验仍待执行。
+- P8：组件、训练/评估/服务兼容、测试、300 步受控实验，以及后续 2,000 步随机 Batch
+  基线/GQA 对照和完整验证集 Early Stopping 均已完成；多 seed、相同字符/FLOPs 预算和
+  更大语料复验仍待执行。
 - P9：受控上传、OCR/ASR/TTS 后端、Agent 工具、服务接口、分段延迟和真实模型 smoke 完成；
   复杂图像、真实噪声语音和真实 3B voice-to-voice 负载评测未完成。
 - P10：Manifest、数据治理、授权、路径隔离、PEFT 激活控制面和 smoke 完成；真实领域 Adapter

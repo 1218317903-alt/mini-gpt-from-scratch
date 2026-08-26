@@ -2,6 +2,7 @@
 
 import argparse
 import logging
+import math
 import sys
 import time
 from dataclasses import asdict, replace
@@ -30,7 +31,7 @@ from minigpt.model import MiniGPT, count_parameters
 from minigpt.tokenizer import ProjectTokenizer, load_tokenizer
 from minigpt.trainer import (
     create_cuda_grad_scaler,
-    evaluate_loss,
+    evaluate_metrics,
     train_accumulation_step,
     train_step,
 )
@@ -85,6 +86,30 @@ def parse_args() -> argparse.Namespace:
         type=int,
         default=None,
         help="可选的训练步数覆盖，适合短程冒烟或受限硬件实验。",
+    )
+    parser.add_argument(
+        "--early-stopping-patience",
+        type=int,
+        default=0,
+        help="连续多少次验证无改善后停止；0 表示关闭。",
+    )
+    parser.add_argument(
+        "--early-stopping-min-delta",
+        type=float,
+        default=0.0,
+        help="验证 Loss 至少改善多少才重置 Early Stopping。",
+    )
+    parser.add_argument(
+        "--eval-interval",
+        type=int,
+        default=None,
+        help="可选的验证间隔覆盖，适合早停和短程实验。",
+    )
+    parser.add_argument(
+        "--eval-steps",
+        type=int,
+        default=None,
+        help="可选的验证 Batch 数覆盖。",
     )
     parser.add_argument("--embedding-dim", type=int, default=None)
     parser.add_argument("--num-heads", type=int, default=None)
@@ -342,6 +367,24 @@ def main() -> None:
         if args.max_steps <= 0:
             raise ValueError("max_steps 覆盖必须是正整数。")
         training_config = replace(training_config, max_steps=args.max_steps)
+    if args.eval_interval is not None:
+        if args.eval_interval <= 0:
+            raise ValueError("eval_interval 覆盖必须是正整数。")
+        training_config = replace(
+            training_config,
+            eval_interval=args.eval_interval,
+        )
+    if args.eval_steps is not None:
+        if args.eval_steps <= 0:
+            raise ValueError("eval_steps 覆盖必须是正整数。")
+        training_config = replace(training_config, eval_steps=args.eval_steps)
+    if args.early_stopping_patience < 0:
+        raise ValueError("early_stopping_patience 不能为负数。")
+    if (
+        not math.isfinite(args.early_stopping_min_delta)
+        or args.early_stopping_min_delta < 0
+    ):
+        raise ValueError("early_stopping_min_delta 必须是非负有限数字。")
     data_config, model_config = apply_runtime_overrides(
         args,
         data_config,
@@ -371,6 +414,8 @@ def main() -> None:
             "precision": args.precision,
             "compile": args.compile,
             "compile_mode": args.compile_mode,
+            "early_stopping_patience": args.early_stopping_patience,
+            "early_stopping_min_delta": args.early_stopping_min_delta,
         },
         "paths": {
             "source_config": str(config_path),
@@ -480,6 +525,8 @@ def main() -> None:
 
     global_step = 0
     best_validation_loss = float("inf")
+    early_stopping_bad_evals = 0
+    stopped_early = False
 
     if args.resume is not None:
         resume_path = args.resume
@@ -506,9 +553,21 @@ def main() -> None:
         if scheduler is not None and checkpoint.get("scheduler_state_dict") is None:
             scheduler.set_completed_steps(global_step)
         best_validation_loss = float(checkpoint["best_validation_loss"])
+        training_state = checkpoint.get("training_state")
+        if isinstance(training_state, dict):
+            raw_bad_evals = training_state.get("early_stopping_bad_evals", 0)
+            if type(raw_bad_evals) is int and raw_bad_evals >= 0:
+                early_stopping_bad_evals = raw_bad_evals
 
         LOGGER.info(f"已恢复训练：global_step={global_step}")
     tokenizer_info = build_tokenizer_info(tokenizer)
+
+    def checkpoint_training_state() -> dict[str, object]:
+        return {
+            "early_stopping_bad_evals": early_stopping_bad_evals,
+            "early_stopping_patience": args.early_stopping_patience,
+            "early_stopping_min_delta": args.early_stopping_min_delta,
+        }
 
     batch_iterator = iter(train_loader)
     execution_model = compile_model(
@@ -528,6 +587,7 @@ def main() -> None:
         f"effective_batch_size="
         f"{data_config.batch_size * args.gradient_accumulation_steps} "
         f"tokenizer={data_config.tokenizer_type} packing={data_config.packing}"
+        f" early_stopping_patience={args.early_stopping_patience}"
     )
     experiment.record(
         "run_started",
@@ -541,6 +601,8 @@ def main() -> None:
         ),
         compiled=args.compile,
         compile_mode=args.compile_mode,
+        early_stopping_patience=args.early_stopping_patience,
+        early_stopping_min_delta=args.early_stopping_min_delta,
         starting_step=global_step,
     )
     if device.type == "cuda":
@@ -620,21 +682,48 @@ def main() -> None:
             )
 
         if global_step % training_config.eval_interval == 0 or global_step == 1:
-            validation_loss = evaluate_loss(
+            validation_metrics = evaluate_metrics(
                 model=execution_model,
                 data_loader=val_loader,
                 device=device,
-                max_batches=training_config.eval_steps,
+                max_batches=(
+                    None
+                    if args.early_stopping_patience > 0
+                    else training_config.eval_steps
+                ),
+                amp_dtype=amp_dtype,
+                byte_count=len(val_text.encode("utf-8")),
+            )
+            validation_loss = validation_metrics.loss
+
+            bpb_text = (
+                "not_available"
+                if validation_metrics.bpb_utf8 is None
+                else f"{validation_metrics.bpb_utf8:.4f}"
+            )
+            LOGGER.info(
+                f"step={global_step} validation_loss={validation_loss:.4f} "
+                f"bits_per_token={validation_metrics.bits_per_token:.4f} "
+                f"bpb_utf8={bpb_text}"
             )
 
-            LOGGER.info(f"step={global_step} validation_loss={validation_loss:.4f}")
-
-            is_best = validation_loss < best_validation_loss
+            is_best = validation_loss < (
+                best_validation_loss - args.early_stopping_min_delta
+            )
+            if is_best:
+                early_stopping_bad_evals = 0
+            elif args.early_stopping_patience > 0:
+                early_stopping_bad_evals += 1
             experiment.record(
                 "validation",
                 step=global_step,
                 validation_loss=float(validation_loss),
+                bits_per_token=validation_metrics.bits_per_token,
+                bpb_utf8=validation_metrics.bpb_utf8,
+                token_count=validation_metrics.token_count,
+                byte_count=validation_metrics.byte_count,
                 is_best=is_best,
+                early_stopping_bad_evals=early_stopping_bad_evals,
             )
 
             if is_best:
@@ -650,6 +739,7 @@ def main() -> None:
                     tokenizer_info=tokenizer_info,
                     seed=training_config.seed,
                     scaler=scaler,
+                    training_state=checkpoint_training_state(),
                 )
                 experiment.record(
                     "checkpoint_saved",
@@ -659,6 +749,24 @@ def main() -> None:
                     best_validation_loss=float(best_validation_loss),
                 )
                 LOGGER.info(f"best checkpoint 已保存：{best_path}")
+
+            if (
+                args.early_stopping_patience > 0
+                and early_stopping_bad_evals >= args.early_stopping_patience
+            ):
+                stopped_early = True
+                experiment.record(
+                    "early_stopping",
+                    step=global_step,
+                    best_validation_loss=float(best_validation_loss),
+                    bad_evals=early_stopping_bad_evals,
+                    patience=args.early_stopping_patience,
+                )
+                LOGGER.info(
+                    "Early Stopping: 连续 %d 次验证无改善，停止训练。",
+                    early_stopping_bad_evals,
+                )
+                break
 
         if global_step % training_config.save_interval == 0:
             save_checkpoint(
@@ -672,6 +780,7 @@ def main() -> None:
                 tokenizer_info=tokenizer_info,
                 seed=training_config.seed,
                 scaler=scaler,
+                training_state=checkpoint_training_state(),
             )
             experiment.record(
                 "checkpoint_saved",
@@ -694,6 +803,7 @@ def main() -> None:
             tokenizer_info=tokenizer_info,
             seed=training_config.seed,
             scaler=scaler,
+            training_state=checkpoint_training_state(),
         )
         experiment.record(
             "run_completed",
@@ -702,6 +812,7 @@ def main() -> None:
             training_time_seconds=float(training_elapsed),
             best_validation_loss=float(best_validation_loss),
             latest_checkpoint=str(latest_path),
+            stopped_early=stopped_early,
         )
         LOGGER.info(f"训练结束，latest checkpoint 已保存：{latest_path}")
 

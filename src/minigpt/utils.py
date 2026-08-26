@@ -99,6 +99,7 @@ def save_checkpoint(
     tokenizer_info: dict[str, Any],
     seed: int,
     scaler: Any = None,
+    training_state: dict[str, Any] | None = None,
 ) -> None:
     """保存完整训练状态。"""
     if global_step < 0:
@@ -117,6 +118,7 @@ def save_checkpoint(
         "tokenizer_info": tokenizer_info,
         "seed": seed,
         "random_states": capture_random_states(),
+        "training_state": {} if training_state is None else dict(training_state),
     }
 
     temporary_path: Path | None = None

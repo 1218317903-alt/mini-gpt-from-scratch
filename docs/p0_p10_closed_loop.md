@@ -31,7 +31,7 @@
 | P5 | lexical/dense/hybrid + weighted RRF 对照 | 组件完成 |
 | P6 | 计划门禁、恢复、引用、SSE/取消/指标 | 工程完成、模型条件验收 |
 | P7 | 六个 Word/PDF 工具、回读和 4 页视觉 QA | 完成 |
-| P8 | RoPE/RMSNorm/SwiGLU/SDPA/fused QKV/BPE/packing | 受控短预算完成 |
+| P8 | RoPE/RMSNorm/SwiGLU/SDPA/fused QKV/BPE/packing | 正式对照完成，扩大复验待执行 |
 | P9 | OCR/ASR/TTS、上传、工具、服务、真实 smoke | 基础闭环完成 |
 | P10 | 私有 Manifest、授权、数据门禁、PEFT 激活 | 治理完成、训练未执行 |
 
@@ -41,8 +41,9 @@ P8 在固定 307,200 Token 预算中，SDPA 同参数量吞吐 +21.40%，峰值�
 fused QKV 同参数量吞吐 +15.55%。组合现代架构因 SwiGLU 参数量增加和小序列 RoPE 开销，
 吞吐反而 -26.13%。所有变体过拟合固定 Batch，验证 Loss 上升，所以没有精度提升结论。
 
-BPE 在 100,000 字符上把 Token 数减少 48.656%，roundtrip 完整，但尚未完成相同字符预算
-正式 BPB 对照。
+BPE 在 100,000 字符上把 Token 数减少 48.656%，roundtrip 完整。后续已完成同一 BPE 数据
+上的 2,000 步随机 Batch 对照和完整验证集 Early Stopping；多 seed、相同字符/FLOPs 预算
+与更大语料复验仍待执行，详见 [现代架构与 Early Stopping 报告](modern_architecture_early_stopping_2026-08-26.md)。
 
 P9 真实 OCR 对单行 `MINIGPT P9 TEST` 得到 CER 0%；Whisper tiny 对系统合成短英文得到
 9.52% 字符错误率。热路径 OCR/ASR 分别约 75.56/74.09ms，冷启动分别约 13.92/6.53 秒；
@@ -73,9 +74,10 @@ P10 标准数据、满足成年人和同意条件的合成治理数据通过；�
 文件交付、现代 kernel、模态级联和私有化控制。公开数字必须分别注明 frozen、dev、固定
 Batch benchmark 或 smoke，不能把不同证据混成一个“准确率”。
 
-仍需继续完成的生产化工作包括：2,000 步现代随机 batch 正式对照、困难 OCR/真实噪声 ASR
-评测、真实 3B voice-to-voice p50/p95、按租户隔离 Adapter worker、鉴权/审计日志、Prometheus
-和真正 token-level streaming。
+仍需继续完成的生产化工作包括：多 seed、相同字符/FLOPs 预算和更大语料的现代训练复验、
+困难 OCR/真实噪声 ASR 评测、真实 3B voice-to-voice p50/p95、按租户隔离 Adapter worker、
+鉴权/审计日志、Prometheus 和真正 token-level streaming。2,000 步单 seed 对照和完整验证
+集 Early Stopping 已单独记录，不替代这些更高等级的验证。
 
 ## 7. 最终验收门禁
 

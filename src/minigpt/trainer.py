@@ -1,5 +1,7 @@
+import math
 from collections.abc import Sequence
 from contextlib import nullcontext
+from dataclasses import dataclass
 from typing import Any
 
 import torch
@@ -7,6 +9,17 @@ import torch.nn.functional as F
 from torch import nn
 from torch.optim import Optimizer
 from torch.utils.data import DataLoader
+
+
+@dataclass(frozen=True)
+class EvaluationMetrics:
+    """Token-weighted evaluation metrics for a language-model split."""
+
+    loss: float
+    bits_per_token: float
+    bpb_utf8: float | None
+    token_count: int
+    byte_count: int | None
 
 
 def compute_language_model_loss(
@@ -188,14 +201,35 @@ def evaluate_loss(
     max_batches: int | None = None,
     amp_dtype: torch.dtype | None = None,
 ) -> float:
-    """计算验证集的平均 Loss。"""
+    """计算验证集的 Token-weighted Loss。"""
+    return evaluate_metrics(
+        model=model,
+        data_loader=data_loader,
+        device=device,
+        max_batches=max_batches,
+        amp_dtype=amp_dtype,
+    ).loss
+
+
+def evaluate_metrics(
+    model: nn.Module,
+    data_loader: DataLoader,
+    device: torch.device,
+    max_batches: int | None = None,
+    amp_dtype: torch.dtype | None = None,
+    byte_count: int | None = None,
+) -> EvaluationMetrics:
+    """Compute token-weighted loss plus optional UTF-8 BPB metrics."""
     if max_batches is not None and max_batches <= 0:
         raise ValueError("max_batches 必须大于 0。")
+    if byte_count is not None and byte_count <= 0:
+        raise ValueError("byte_count 必须大于 0。")
 
     was_training = model.training
     model.eval()
 
-    total_loss = 0.0
+    total_nll = 0.0
+    token_count = 0
     batch_count = 0
 
     try:
@@ -208,16 +242,29 @@ def evaluate_loss(
                 targets = targets.to(device)
 
                 with _autocast_context(device, amp_dtype):
-                    _, loss = compute_language_model_loss(
-                        model=model,
-                        inputs=inputs,
-                        targets=targets,
+                    model_output = model(inputs)
+                    logits = (
+                        model_output[0]
+                        if isinstance(model_output, tuple)
+                        else model_output
+                    )
+                    if logits.ndim != 3 or logits.shape[:2] != targets.shape:
+                        raise ValueError("评估 logits 与 targets 形状不匹配。")
+                    loss_tensor = F.cross_entropy(
+                        logits.float().reshape(-1, logits.size(-1)),
+                        targets.reshape(-1).long(),
+                        ignore_index=-100,
+                        reduction="sum",
                     )
 
-                if not torch.isfinite(loss).item():
+                if not torch.isfinite(loss_tensor).item():
                     raise FloatingPointError("验证 Loss 出现 NaN 或 Inf。")
 
-                total_loss += loss.item()
+                batch_tokens = int(targets.ne(-100).sum().item())
+                if batch_tokens <= 0:
+                    raise ValueError("验证 Batch 没有任何有效目标 Token。")
+                total_nll += loss_tensor.item()
+                token_count += batch_tokens
                 batch_count += 1
     finally:
         if was_training:
@@ -226,4 +273,23 @@ def evaluate_loss(
     if batch_count == 0:
         raise ValueError("验证 DataLoader 没有提供任何 Batch。")
 
-    return total_loss / batch_count
+    if token_count <= 0:
+        raise ValueError("验证 DataLoader 没有任何有效目标 Token。")
+    mean_loss = total_nll / token_count
+    evaluated_all_batches = max_batches is None
+    if not evaluated_all_batches:
+        try:
+            evaluated_all_batches = batch_count >= len(data_loader)
+        except TypeError:
+            evaluated_all_batches = False
+    return EvaluationMetrics(
+        loss=mean_loss,
+        bits_per_token=mean_loss / math.log(2.0),
+        bpb_utf8=(
+            None
+            if byte_count is None or not evaluated_all_batches
+            else total_nll / byte_count / math.log(2.0)
+        ),
+        token_count=token_count,
+        byte_count=byte_count,
+    )

@@ -17,7 +17,7 @@ from minigpt.config import (
 from minigpt.dataset import CharacterLanguageModelDataset
 from minigpt.model import MiniGPT
 from minigpt.tokenizer import CharacterTokenizer
-from minigpt.trainer import evaluate_loss, train_step
+from minigpt.trainer import evaluate_loss, evaluate_metrics, train_step
 from minigpt.utils import load_checkpoint, save_checkpoint
 
 
@@ -84,13 +84,35 @@ def test_train_step_and_evaluate_loss_are_finite() -> None:
         model=model,
         data_loader=loader,
         device=torch.device("cpu"),
-        max_batches=2,
     )
 
     assert torch.isfinite(loss)
     assert gradient_norm >= 0
     assert validation_loss > 0
     assert model.training is True
+
+    metrics = evaluate_metrics(
+        model=model,
+        data_loader=loader,
+        device=torch.device("cpu"),
+        byte_count=40,
+    )
+    assert metrics.loss == pytest.approx(validation_loss)
+    assert metrics.bits_per_token == pytest.approx(
+        validation_loss / torch.log(torch.tensor(2.0)).item()
+    )
+    assert metrics.bpb_utf8 is not None
+    assert metrics.token_count > 0
+    assert metrics.byte_count == 40
+
+    partial_metrics = evaluate_metrics(
+        model=model,
+        data_loader=loader,
+        device=torch.device("cpu"),
+        max_batches=1,
+        byte_count=40,
+    )
+    assert partial_metrics.bpb_utf8 is None
 
 
 def test_checkpoint_round_trip_restores_model(tmp_path) -> None:
@@ -108,6 +130,7 @@ def test_checkpoint_round_trip_restores_model(tmp_path) -> None:
         config={"stage": 3},
         tokenizer_info={"itos": ["<unk>", "a"]},
         seed=42,
+        training_state={"early_stopping_bad_evals": 2},
     )
 
     restored_model = make_tiny_model()
@@ -127,6 +150,7 @@ def test_checkpoint_round_trip_restores_model(tmp_path) -> None:
         assert torch.equal(expected, actual)
     assert checkpoint["global_step"] == 3
     assert checkpoint["best_validation_loss"] == pytest.approx(1.25)
+    assert checkpoint["training_state"]["early_stopping_bad_evals"] == 2
     assert not list(tmp_path.glob(".*.tmp"))
 
 
