@@ -211,6 +211,19 @@ uv run python scripts/run_p10_governance_smoke.py
 uv run python scripts/export_p0_p10_report.py
 ```
 
+如果目标是直接体验多轮聊天，建议先启用 3B 量化聊天后端：
+
+```powershell
+$env:MINIGPT_CHAT_MODEL_SOURCE = "Qwen/Qwen2.5-3B-Instruct"
+$env:MINIGPT_CHAT_DTYPE = "float16"
+$env:MINIGPT_CHAT_QUANTIZATION = "4bit"
+uv run uvicorn minigpt_service.app:app --host 127.0.0.1 --port 8000
+```
+
+当前 `/chat` 接收完整消息历史，`/agent/chat` 支持受限工具循环，`/agent/chat/stream`
+输出路由、模型、工具和最终结果等 SSE 阶段事件。面向真正聊天产品的升级顺序与验收标准见
+[对话产品总体升级路线图](docs/conversation_upgrade_roadmap.md)。
+
 ## 可复现实验
 
 每次训练创建独立运行目录：
@@ -329,8 +342,8 @@ D 盘，合计硬上限 40GB。
 ## 当前限制
 
 - 字符级模型和 409.6 万 Token 预算只能学习局部文本结构，不具备通用语言理解能力。
-- 没有 EOS Token，生成由 `max_new_tokens` 停止。
-- KV Cache 第一版不支持超过 `block_size` 后直接滑动，需要重新 Prefill。
+- 字符级 Tokenizer 仍依赖 `max_new_tokens` 停止；BPE 路径已经支持 EOS/PAD 与 EOS 提前停止。
+- KV Cache 超过 `block_size` 后会对滚动窗口重新 Prefill，正确性优先，但长文本吞吐仍会下降。
 - 服务层已提供 `/generate`、`/chat`、同步与 SSE `/agent/chat`；SSE 当前是阶段级进度事件，
   还不是真正逐 Token streaming，协作式取消也不能抢占进行中的 HF generate。
 - 还没有长期记忆、用户鉴权、Prometheus 持久指标或跨进程 trace 聚合。
