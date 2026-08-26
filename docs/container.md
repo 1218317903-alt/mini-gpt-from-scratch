@@ -32,7 +32,9 @@ docker run --rm `
   -e MINIGPT_CHAT_ADAPTER_PATH=/models/adapter `
   -e MINIGPT_CHAT_LOCAL_FILES_ONLY=true `
   -e MINIGPT_CHAT_DTYPE=float32 `
+  -e MINIGPT_CONVERSATION_DB=/data/conversations.db `
   -v ${PWD}/models:/models:ro `
+  -v ${PWD}/output:/data `
   minigpt-service:local
 ```
 
@@ -48,3 +50,10 @@ docker run --rm `
 - `MINIGPT_CHAT_DTYPE`：`float16`、`bfloat16` 或 `float32`，默认 `float32`
 - `MINIGPT_CHAT_MAX_INPUT_TOKENS`：聊天输入 Token 上限，默认 `4096`
 - `MINIGPT_CHAT_LOCAL_FILES_ONLY`：`true`/`false`，严格离线加载时设为 `true`
+- `MINIGPT_CONVERSATION_DB`：SQLite 会话数据库，默认 `output/conversations.db`
+- `MINIGPT_CONTEXT_RESERVED_OUTPUT_TOKENS`：为模型回复预留的上下文 Token，默认 `512`
+- `MINIGPT_CONTEXT_SUMMARY_TOKENS`：自动摘要预算，默认 `768`
+- `MINIGPT_CONTEXT_RECENT_TURNS`：压缩时优先保留的最近对话轮数，默认 `6`
+
+启动后访问 `/chat-ui` 使用持久化聊天页面。SQLite 数据库目录必须是可写挂载；模型目录仍可
+保持只读。

@@ -217,12 +217,20 @@ uv run python scripts/export_p0_p10_report.py
 $env:MINIGPT_CHAT_MODEL_SOURCE = "Qwen/Qwen2.5-3B-Instruct"
 $env:MINIGPT_CHAT_DTYPE = "float16"
 $env:MINIGPT_CHAT_QUANTIZATION = "4bit"
+$env:MINIGPT_CONVERSATION_DB = "D:\mini-gpt-from-scratch\output\conversations.db"
+$env:MINIGPT_CONTEXT_RESERVED_OUTPUT_TOKENS = "512"
+$env:MINIGPT_CONTEXT_SUMMARY_TOKENS = "768"
+$env:MINIGPT_CONTEXT_RECENT_TURNS = "6"
 uv run uvicorn minigpt_service.app:app --host 127.0.0.1 --port 8000
 ```
 
-当前 `/chat` 接收完整消息历史，`/agent/chat` 支持受限工具循环，`/agent/chat/stream`
-输出路由、模型、工具和最终结果等 SSE 阶段事件。面向真正聊天产品的升级顺序与验收标准见
-[对话产品总体升级路线图](docs/conversation_upgrade_roadmap.md)。
+启动后访问 `http://127.0.0.1:8000/chat-ui`。页面支持 SQLite 多会话、刷新恢复、会话重命名
+和删除、逐 Token SSE、停止生成、Token 使用量，以及自动上下文压缩。压缩器会保留 system
+消息与最近轮次，把更早内容压成持久化摘要；即使没有额外摘要模型也能使用确定性提取摘要。
+
+底层 `/chat` 仍接收完整消息历史；产品页面使用 `/conversations` 会话 API。
+`/agent/chat` 支持受限工具循环，`/agent/chat/stream` 输出 Agent 阶段事件。完整设计和后续
+质量路线见[对话产品总体升级路线图](docs/conversation_upgrade_roadmap.md)。
 
 ## 可复现实验
 
@@ -345,8 +353,9 @@ D 盘，合计硬上限 40GB。
 - 字符级 Tokenizer 仍依赖 `max_new_tokens` 停止；BPE 路径已经支持 EOS/PAD 与 EOS 提前停止。
 - KV Cache 超过 `block_size` 后会对滚动窗口重新 Prefill，正确性优先，但长文本吞吐仍会下降。
 - 服务层已提供 `/generate`、`/chat`、同步与 SSE `/agent/chat`；SSE 当前是阶段级进度事件，
-  还不是真正逐 Token streaming，协作式取消也不能抢占进行中的 HF generate。
-- 还没有长期记忆、用户鉴权、Prometheus 持久指标或跨进程 trace 聚合。
+  会话 API 已提供逐 Token streaming；Agent SSE 仍是阶段级事件。
+- SQLite 会话、自动摘要压缩与生成步取消已经可用，但还没有用户鉴权、长期偏好记忆、
+  Prometheus 持久指标或跨进程 trace 聚合。
 - 已支持 4-bit QLoRA，但没有 Flash Attention 或分布式训练。
 - P0–P5 冻结测试中 multi-step 与 recovery 均为 0%，参数准确率 57.53%；P6 只在 dev 做
   可靠性回归，没有重跑 frozen，因此尚不适合生产使用。
