@@ -156,6 +156,107 @@ class ChatResponse(BaseModel):
     duration_ms: float = Field(ge=0)
 
 
+class ConversationCreateRequest(BaseModel):
+    """Create one persistent local chat thread."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    title: str = Field(default="新对话", min_length=1, max_length=200)
+    model: str | None = Field(default=None, max_length=512)
+    system_prompt: str | None = Field(default=None, max_length=32768)
+
+
+class ConversationUpdateRequest(BaseModel):
+    """Update mutable conversation metadata."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    title: str | None = Field(default=None, min_length=1, max_length=200)
+    model: str | None = Field(default=None, max_length=512)
+    system_prompt: str | None = Field(default=None, max_length=32768)
+
+
+class ConversationMessageRequest(BaseModel):
+    """Append a user turn and generate a persistent assistant response."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    content: str = Field(min_length=1, max_length=32768)
+    client_request_id: str | None = Field(default=None, min_length=8, max_length=128)
+    max_new_tokens: int = Field(default=512, ge=1, le=2048)
+    temperature: float = Field(default=0.7, gt=0)
+    top_k: int | None = Field(default=None, ge=0)
+    top_p: float | None = Field(default=None, gt=0, le=1)
+    greedy: bool = False
+    seed: int | None = None
+
+
+class StoredMessageResponse(BaseModel):
+    """Persistent message returned to the chat client."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    id: str
+    sequence: int = Field(ge=1)
+    role: ChatRole
+    content: str
+    status: Literal["complete", "generating", "cancelled", "error", "interrupted"]
+    model: str | None = None
+    prompt_tokens: int | None = Field(default=None, ge=0)
+    generated_tokens: int | None = Field(default=None, ge=0)
+    finish_reason: str | None = None
+    request_id: str | None = None
+    created_at: str
+    updated_at: str
+
+
+class ConversationResponse(BaseModel):
+    """Conversation metadata and optional ordered messages."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    id: str
+    title: str
+    model: str | None = None
+    system_prompt: str | None = None
+    summary: str | None = None
+    summarized_through_sequence: int = Field(ge=0)
+    created_at: str
+    updated_at: str
+    archived: bool = False
+    messages: list[StoredMessageResponse] = Field(default_factory=list)
+
+
+class ConversationListResponse(BaseModel):
+    """Paginated recent conversations."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    conversations: list[ConversationResponse]
+
+
+class ConversationGenerationResponse(BaseModel):
+    """Completed persistent user/assistant exchange."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    conversation: ConversationResponse
+    user_message: StoredMessageResponse
+    assistant_message: StoredMessageResponse
+    compressed: bool
+    omitted_messages: int = Field(ge=0)
+    estimated_context_tokens: int = Field(ge=0)
+
+
+class ConversationCancelResponse(BaseModel):
+    """Result of requesting cancellation for a conversation generation."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    run_id: str
+    cancellation_requested: bool
+
+
 class AgentRequest(ChatRequest):
     """Input accepted by the bounded tool-using Agent endpoint."""
 

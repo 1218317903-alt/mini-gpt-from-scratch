@@ -1,8 +1,12 @@
 """Tests for the stage-eight FastAPI application skeleton."""
 
+from collections.abc import Iterator
+from pathlib import Path
+
 from fastapi import FastAPI, HTTPException
 from fastapi.testclient import TestClient
 
+from agent.llm.base import ChatStreamChunk
 from agent.orchestrator import AgentResult, AgentTrace
 from minigpt_service.app import (
     SERVICE_NAME,
@@ -12,6 +16,10 @@ from minigpt_service.app import (
     create_app_from_environment,
 )
 from minigpt_service.chat_model import ChatResult
+from minigpt_service.conversations import (
+    ConversationContextBuilder,
+    SQLiteConversationRepository,
+)
 from minigpt_service.schemas import AgentRequest, ChatRequest, GenerateRequest
 
 
@@ -20,7 +28,7 @@ def test_create_app_returns_configured_fastapi_application() -> None:
 
     assert isinstance(created_app, FastAPI)
     assert created_app.title == SERVICE_NAME
-    assert created_app.version == "0.5.0"
+    assert created_app.version == "0.6.0"
 
 
 def test_create_app_returns_independent_instances() -> None:
@@ -148,6 +156,19 @@ class _FakeChatModel:
             model="fake-chat",
         )
 
+    def stream_chat(self, messages, **_: object) -> Iterator[ChatStreamChunk]:
+        text = f"stream reply to: {messages[-1].content}"
+        yield ChatStreamChunk(text="stream reply ", model="fake-chat")
+        yield ChatStreamChunk(text=f"to: {messages[-1].content}", model="fake-chat")
+        yield ChatStreamChunk(
+            done=True,
+            prompt_tokens=5,
+            generated_tokens=len(text),
+            finish_reason="stop",
+            model="fake-chat",
+            duration_ms=1.25,
+        )
+
 
 class _FakeAgent:
     is_ready = True
@@ -205,6 +226,80 @@ def test_chat_route_returns_service_unavailable_without_chat_model() -> None:
         assert error.status_code == 503
     else:
         raise AssertionError("Expected /chat to reject an unloaded chat model")
+
+
+def test_persistent_conversation_routes_store_multi_turn_chat(tmp_path: Path) -> None:
+    repository = SQLiteConversationRepository(tmp_path / "conversations.db")
+    service_app = create_app(
+        chat_model=_FakeChatModel(),  # type: ignore[arg-type]
+        conversation_repository=repository,
+        conversation_context_builder=ConversationContextBuilder(
+            max_input_tokens=512,
+            reserved_output_tokens=128,
+        ),
+    )
+
+    with TestClient(service_app) as client:
+        created = client.post("/conversations", json={"title": "新对话"})
+        assert created.status_code == 201
+        conversation_id = created.json()["id"]
+
+        generated = client.post(
+            f"/conversations/{conversation_id}/messages",
+            json={"content": "解释 KV Cache", "max_new_tokens": 64},
+        )
+        restored = client.get(f"/conversations/{conversation_id}")
+
+    assert generated.status_code == 200
+    assert generated.json()["assistant_message"]["content"] == (
+        "reply to: 解释 KV Cache"
+    )
+    assert restored.json()["title"] == "解释 KV Cache"
+    assert [message["role"] for message in restored.json()["messages"]] == [
+        "user",
+        "assistant",
+    ]
+
+
+def test_conversation_sse_emits_token_deltas_and_persists_result(
+    tmp_path: Path,
+) -> None:
+    repository = SQLiteConversationRepository(tmp_path / "stream.db")
+    service_app = create_app(
+        chat_model=_FakeChatModel(),  # type: ignore[arg-type]
+        conversation_repository=repository,
+    )
+
+    with TestClient(service_app) as client:
+        conversation_id = client.post(
+            "/conversations", json={"title": "流式测试"}
+        ).json()["id"]
+        response = client.post(
+            f"/conversations/{conversation_id}/messages/stream",
+            json={"content": "hello", "client_request_id": "request-stream-1"},
+        )
+        restored = client.get(f"/conversations/{conversation_id}").json()
+
+    assert response.status_code == 200
+    assert "event: start" in response.text
+    assert response.text.count("event: delta") == 2
+    assert "event: done" in response.text
+    assert restored["messages"][-1]["content"] == "stream reply to: hello"
+    assert restored["messages"][-1]["status"] == "complete"
+
+
+def test_chat_ui_is_served_from_static_assets(tmp_path: Path) -> None:
+    repository = SQLiteConversationRepository(tmp_path / "ui.db")
+    service_app = create_app(conversation_repository=repository)
+
+    with TestClient(service_app) as client:
+        page = client.get("/chat-ui")
+        script = client.get("/static/chat.js")
+
+    assert page.status_code == 200
+    assert "自动上下文压缩" in page.text
+    assert script.status_code == 200
+    assert "/messages/stream" in script.text
 
 
 def test_agent_route_returns_trace_and_final_answer() -> None:

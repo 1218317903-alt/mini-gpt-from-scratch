@@ -17,11 +17,23 @@ from uuid import uuid4
 from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
+from fastapi.responses import (
+    FileResponse,
+    HTMLResponse,
+    JSONResponse,
+    StreamingResponse,
+)
 from starlette.middleware.base import RequestResponseEndpoint
 
 from minigpt_service.agent_runtime import AgentRunManager
 from minigpt_service.config import ChatServiceConfig, ServiceConfig
+from minigpt_service.conversation_routes import build_conversation_router
+from minigpt_service.conversation_runtime import ConversationRunManager
+from minigpt_service.conversations import (
+    ConversationContextBuilder,
+    ConversationRepository,
+    SQLiteConversationRepository,
+)
 from minigpt_service.domain_runtime import DomainRuntime
 from minigpt_service.multimodal_routes import register_multimodal_routes
 from minigpt_service.schemas import (
@@ -49,7 +61,7 @@ if TYPE_CHECKING:
     from minigpt_service.model_service import ModelService
 
 SERVICE_NAME = "MiniGPT Inference Service"
-SERVICE_VERSION = "0.5.0"
+SERVICE_VERSION = "0.6.0"
 REQUEST_ID_HEADER = "X-Request-ID"
 logger = logging.getLogger("minigpt_service.http")
 
@@ -70,6 +82,7 @@ const body={messages:[{role:'user',content:document.querySelector('#prompt').val
 const response=await fetch('/agent/chat/stream',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
 const reader=response.body.getReader(),decoder=new TextDecoder();while(true){const {value,done}=await reader.read();if(done)break;out.textContent+=decoder.decode(value);}};
 </script></body></html>"""
+_STATIC_ROOT = Path(__file__).with_name("static")
 
 
 def _new_request_id() -> str:
@@ -138,10 +151,13 @@ def create_app(
     agent: AgentOrchestrator | None = None,
     multimodal_workspace: MultimodalWorkspace | None = None,
     domain_registry: DomainAdapterRegistry | None = None,
+    conversation_repository: ConversationRepository | None = None,
+    conversation_context_builder: ConversationContextBuilder | None = None,
 ) -> FastAPI:
     """Create a fresh FastAPI application instance."""
 
     run_manager = AgentRunManager(max_concurrency=2)
+    conversation_run_manager = ConversationRunManager(max_concurrency=2)
     domain_runtime = DomainRuntime(domain_registry, chat_model)
 
     @asynccontextmanager
@@ -159,6 +175,9 @@ def create_app(
                 _app.state.multimodal_workspace = multimodal_workspace
             if domain_registry is not None:
                 _app.state.domain_registry = domain_registry
+            if conversation_repository is not None:
+                conversation_repository.initialize()
+                _app.state.conversation_repository = conversation_repository
             yield
         finally:
             if agent is not None:
@@ -167,6 +186,8 @@ def create_app(
                 model_service.close()
             if chat_model is not None:
                 chat_model.close()
+            if conversation_repository is not None:
+                conversation_repository.close()
 
     service_app = FastAPI(
         title=SERVICE_NAME,
@@ -257,6 +278,22 @@ def create_app(
     @service_app.get("/demo", response_class=HTMLResponse, include_in_schema=False)
     def demo() -> HTMLResponse:
         return HTMLResponse(_DEMO_HTML)
+
+    @service_app.get("/chat-ui", response_class=FileResponse, include_in_schema=False)
+    def chat_ui() -> FileResponse:
+        """Serve the persistent local chat interface."""
+        return FileResponse(_STATIC_ROOT / "chat.html", media_type="text/html")
+
+    @service_app.get("/static/chat.css", include_in_schema=False)
+    def chat_css() -> FileResponse:
+        return FileResponse(_STATIC_ROOT / "chat.css", media_type="text/css")
+
+    @service_app.get("/static/chat.js", include_in_schema=False)
+    def chat_javascript() -> FileResponse:
+        return FileResponse(
+            _STATIC_ROOT / "chat.js",
+            media_type="application/javascript",
+        )
 
     @service_app.get(
         "/ready",
@@ -508,6 +545,15 @@ def create_app(
 
     register_multimodal_routes(service_app, multimodal_workspace)
     domain_runtime.register_routes(service_app)
+    if conversation_repository is not None:
+        service_app.include_router(
+            build_conversation_router(
+                conversation_repository,
+                conversation_context_builder or ConversationContextBuilder(),
+                chat_model,
+                conversation_run_manager,
+            )
+        )
     return service_app
 
 
@@ -576,10 +622,23 @@ def create_app_from_environment() -> FastAPI:
     chat_config = ChatServiceConfig.from_environment()
     multimodal_workspace = _multimodal_from_environment()
     domain_registry = _domain_registry_from_environment()
+    conversation_repository = SQLiteConversationRepository(
+        Path(os.getenv("MINIGPT_CONVERSATION_DB", "output/conversations.db"))
+    )
+    conversation_context_builder = ConversationContextBuilder(
+        max_input_tokens=int(os.getenv("MINIGPT_CHAT_MAX_INPUT_TOKENS", "4096")),
+        reserved_output_tokens=int(
+            os.getenv("MINIGPT_CONTEXT_RESERVED_OUTPUT_TOKENS", "512")
+        ),
+        summary_token_budget=int(os.getenv("MINIGPT_CONTEXT_SUMMARY_TOKENS", "768")),
+        recent_turns=int(os.getenv("MINIGPT_CONTEXT_RECENT_TURNS", "6")),
+    )
     if service_config is None and chat_config is None:
         return create_app(
             multimodal_workspace=multimodal_workspace,
             domain_registry=domain_registry,
+            conversation_repository=conversation_repository,
+            conversation_context_builder=conversation_context_builder,
         )
 
     model_service = None
@@ -642,6 +701,8 @@ def create_app_from_environment() -> FastAPI:
         agent,
         multimodal_workspace,
         domain_registry,
+        conversation_repository,
+        conversation_context_builder,
     )
 
 

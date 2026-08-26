@@ -1,7 +1,7 @@
 [project]
 name = "mini-gpt-from-scratch"
-version = "0.1.0"
-description = "A tested decoder-only MiniGPT and Hugging Face LoRA learning project."
+version = "0.6.0"
+description = "A tested MiniGPT research stack with persistent local chat and agents."
 readme = "README.md"
 requires-python = ">=3.11.16,<3.12"
 dependencies = [
@@ -48,6 +48,9 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 where = ["src", "hf_lora/src"]
+
+[tool.setuptools.package-data]
+minigpt_service = ["static/*.html", "static/*.css", "static/*.js"]
 
 [tool.uv.sources]
 torch = [

@@ -1,0 +1,52 @@
+:root {
+  color-scheme: dark;
+  font-family: Inter, "Segoe UI", system-ui, sans-serif;
+  background: #080b12;
+  color: #edf2ff;
+}
+* { box-sizing: border-box; }
+body { margin: 0; min-height: 100vh; background: radial-gradient(circle at 55% -10%, #17244a, #080b12 45%); }
+button, textarea, input { font: inherit; }
+button { cursor: pointer; }
+.shell { min-height: 100vh; display: grid; grid-template-columns: 250px minmax(420px, 1fr) 270px; }
+.sidebar, .details { background: #0d111cdd; backdrop-filter: blur(16px); padding: 22px 16px; }
+.sidebar { border-right: 1px solid #222a3b; }
+.details { border-left: 1px solid #222a3b; }
+.brand { display: flex; gap: 11px; align-items: center; margin-bottom: 24px; }
+.brand-mark { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 12px; background: linear-gradient(135deg,#795cff,#26c6da); font-weight: 800; }
+.brand small { display: block; color: #8994aa; margin-top: 2px; }
+.primary, .ghost { border: 0; border-radius: 10px; padding: 10px 15px; color: #f8faff; }
+.primary { background: linear-gradient(135deg,#7357f6,#526fe8); box-shadow: 0 8px 24px #4c5ee833; }
+.ghost { background: #192132; }
+.danger { color: #ff9eaa; }
+.wide { width: 100%; }
+.conversation-list { display: grid; gap: 7px; margin-top: 18px; }
+.conversation { padding: 11px 12px; border-radius: 10px; color: #b9c3d8; background: transparent; border: 1px solid transparent; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.conversation:hover, .conversation.active { background: #171e2d; border-color: #2c3850; color: white; }
+.chat-panel { min-width: 0; display: grid; grid-template-rows: auto 1fr auto; height: 100vh; }
+.chat-header { display: flex; justify-content: space-between; align-items: center; padding: 18px 25px; border-bottom: 1px solid #20283a; background: #0b0f18bb; }
+.chat-header input { background: transparent; border: 0; color: white; font-size: 18px; font-weight: 650; width: min(480px,60vw); outline: none; }
+.chat-header p { margin: 4px 0 0; color: #8290a8; font-size: 12px; }
+.messages { overflow-y: auto; padding: 30px max(24px, calc((100% - 780px)/2)); }
+.empty-state { text-align: center; color: #8995aa; margin-top: 20vh; }
+.empty-state h1 { color: #eaf0ff; font-size: 28px; }
+.message { display: flex; gap: 12px; margin: 18px 0; align-items: flex-start; }
+.message.user { justify-content: flex-end; }
+.bubble { max-width: 82%; padding: 13px 16px; border-radius: 15px; line-height: 1.62; white-space: pre-wrap; overflow-wrap: anywhere; }
+.user .bubble { background: #5f55d9; border-bottom-right-radius: 4px; }
+.assistant .bubble { background: #141b29; border: 1px solid #283248; border-bottom-left-radius: 4px; }
+.message.error .bubble { border-color: #9b3f50; }
+.meta { display: block; margin-top: 7px; color: #8290a8; font-size: 11px; }
+.composer { margin: 0 max(20px, calc((100% - 820px)/2)) 22px; background: #121927; border: 1px solid #2b3850; border-radius: 16px; padding: 12px; box-shadow: 0 18px 60px #0008; }
+.composer textarea { width: 100%; resize: none; border: 0; outline: none; color: white; background: transparent; padding: 4px; max-height: 180px; }
+.composer-actions { display: flex; align-items: center; justify-content: flex-end; gap: 9px; }
+.composer-actions span { margin-right: auto; color: #8290a8; font-size: 12px; }
+.details h2 { font-size: 16px; margin-top: 4px; }
+.details dl { display: grid; grid-template-columns: 1fr; gap: 5px; }
+.details dt { color: #7f8ba1; font-size: 11px; text-transform: uppercase; margin-top: 10px; }
+.details dd { margin: 0; color: #d8e1f4; overflow-wrap: anywhere; font-size: 13px; }
+.summary-card { margin-top: 25px; padding: 14px; border: 1px solid #283248; background: #121827; border-radius: 12px; }
+.summary-card h3 { margin: 0 0 8px; font-size: 13px; }
+.summary-card p { margin: 0; color: #9ca8bd; font-size: 12px; line-height: 1.5; white-space: pre-wrap; }
+@media (max-width: 950px) { .shell { grid-template-columns: 210px 1fr; } .details { display: none; } }
+@media (max-width: 680px) { .shell { display: block; } .sidebar { display: none; } .chat-panel { height: 100vh; } .messages { padding: 20px 14px; } .composer { margin: 0 12px 12px; } .bubble { max-width: 92%; } }

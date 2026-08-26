@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>MiniGPT Local Chat</title>
+  <link rel="stylesheet" href="/static/chat.css">
+</head>
+<body>
+  <main class="shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <span class="brand-mark">M</span>
+        <div><strong>MiniGPT</strong><small>Local Chat</small></div>
+      </div>
+      <button id="new-chat" class="primary wide">＋ 新建会话</button>
+      <div id="conversation-list" class="conversation-list"></div>
+    </aside>
+
+    <section class="chat-panel">
+      <header class="chat-header">
+        <div>
+          <input id="conversation-title" value="新对话" aria-label="会话标题">
+          <p id="context-state">自动上下文压缩已开启</p>
+        </div>
+        <button id="delete-chat" class="ghost danger">删除</button>
+      </header>
+
+      <div id="messages" class="messages">
+        <div class="empty-state">
+          <h1>开始一段本地对话</h1>
+          <p>会话保存在本机 SQLite；较早内容会自动压缩为摘要，最近轮次始终优先保留。</p>
+        </div>
+      </div>
+
+      <form id="composer" class="composer">
+        <textarea id="prompt" rows="2" maxlength="32768"
+          placeholder="输入消息，Enter 发送，Shift+Enter 换行"></textarea>
+        <div class="composer-actions">
+          <span id="status">就绪</span>
+          <button id="stop" type="button" class="ghost" disabled>停止</button>
+          <button id="send" type="submit" class="primary">发送</button>
+        </div>
+      </form>
+    </section>
+
+    <aside class="details">
+      <h2>运行信息</h2>
+      <dl>
+        <dt>Run ID</dt><dd id="run-id">—</dd>
+        <dt>上下文估算</dt><dd id="context-tokens">—</dd>
+        <dt>压缩消息数</dt><dd id="omitted-count">0</dd>
+        <dt>Prompt Tokens</dt><dd id="prompt-tokens">—</dd>
+        <dt>Generated Tokens</dt><dd id="generated-tokens">—</dd>
+        <dt>完成原因</dt><dd id="finish-reason">—</dd>
+      </dl>
+      <section class="summary-card">
+        <h3>自动摘要</h3>
+        <p id="summary">尚未触发上下文压缩。</p>
+      </section>
+    </aside>
+  </main>
+  <script src="/static/chat.js" defer></script>
+</body>
+</html>
