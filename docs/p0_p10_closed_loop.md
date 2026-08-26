@@ -10,11 +10,11 @@
 
 ## 1. 最终结论
 
-项目已形成一条从手写 Decoder-only Transformer 到真实 3B QLoRA Agent 的完整求职主线，
+项目已形成一条从手写 Decoder-only Transformer 到真实 3B QLoRA Agent 的完整技术主线，
 并继续扩展到可观测服务、真实 Word/PDF、现代架构开关、真实 OCR/ASR/TTS smoke 和隔离的
 私有领域 Adapter 控制面。
 
-整体达到“高可信求职项目”的预期，但没有达到“生产级通用多模态 Agent”。P0–P7 的模型
+整体达到“可审计研究工程”的预期，但没有达到“生产级通用多模态 Agent”。P0–P7 的模型
 指标没有因 P8–P10 被重新包装：唯一 frozen 仍是任务 74%、RAG Recall@5 88.64%、multi-step
 和 recovery 0%；P6 只在 dev 条件验收。P8 是固定 Batch 短预算架构实验，P9 是清晰单行图像
 与合成语音 smoke，P10 没有训练真实领域 Adapter。
@@ -67,10 +67,10 @@ P10 标准数据、满足成年人和同意条件的合成治理数据通过；�
 - 成人领域需要 restricted、18+、同意、来源、许可证、隐私与禁止内容门禁。
 - 静态关键词门禁不替代人工、法律或隐私审核，这一点在报告中明确保留。
 
-## 6. 求职价值与诚实边界
+## 6. 技术价值与证据边界
 
 项目现在可以完整讲述模型数学、训练系统、SFT/QLoRA、Agent 编排、RAG、评测治理、服务、
-文件交付、现代 kernel、模态级联和私有化控制。但简历数字必须分别注明 frozen、dev、固定
+文件交付、现代 kernel、模态级联和私有化控制。公开数字必须分别注明 frozen、dev、固定
 Batch benchmark 或 smoke，不能把不同证据混成一个“准确率”。
 
 仍需继续完成的生产化工作包括：2,000 步现代随机 batch 正式对照、困难 OCR/真实噪声 ASR

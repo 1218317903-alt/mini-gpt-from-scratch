@@ -1,4 +1,4 @@
-# P0–P5 求职项目闭环审计
+# P0–P5 阶段闭环审计
 
 作者：李林知
 日期：2026-08-25
@@ -74,7 +74,7 @@ Precision 为 100%、Recall 为 93.18%，条件 Retriever Recall@5 为 95.12%，
 
 ## 工程质量闭环
 
-最终候选具备以下求职可展示证据：
+最终候选具备以下可复核证据：
 
 - 自研而非黑盒框架包裹的 Router、Orchestrator、Tool Registry、Executor、Trace 与 Eval。
 - 多轮 assistant-only SFT 数据编码、LoRA/QLoRA、NF4 和消费级 GPU 资源权衡。
@@ -86,11 +86,11 @@ Precision 为 100%、Recall 为 93.18%，条件 Retriever Recall@5 为 95.12%，
 Dev/Frozen split 校验、recorded Agent smoke 和全量 pytest。全量结果为 188 passed、覆盖率
 68.45%（门槛 60%）；唯一警告来自 Starlette TestClient 的上游弃用提示。
 
-## 是否符合我最初的预期
+## 阶段目标对照
 
 符合的部分：项目已经从教学代码升级为有研究问题、有真实模型、有 Agent 数据、有监督微调、
-有 RAG、有隐藏集和有失败归因的求职项目。它足以支撑我在面试中解释从 Transformer 原理到
-Agent 系统、QLoRA、RAG 与评测治理的完整链路。
+有 RAG、有隐藏集和有失败归因的研究工程。它把 Transformer 原理、Agent 系统、QLoRA、
+RAG 与评测治理连接成一条可检查的完整链路。
 
 不符合“完美结果”的部分：当前还不是成熟对话产品，没有 SSE 流式服务与前端观测；多步骤、
 参数修复、恢复策略不达标；Word/PDF 工具属于 P7；图片和语音属于 P9；可选私有领域

@@ -8,8 +8,8 @@
 PyTorch 手写字符级 Transformer、训练与生成，再把同一套 Causal LM 知识迁移到真实
 Hugging Face 模型的 response-only SFT 与 PEFT LoRA。
 
-这不是对 nanoGPT 的文件级复制，也不把一次实验包装成“大模型训练”。项目重点是展示
-对数据流、Attention、训练状态、推理缓存、实验设计和 Python 工程质量的完整理解。
+项目围绕数据流、Attention、训练状态、推理缓存、实验设计和 Python 工程质量展开，所有
+核心模块、实验结论和工程边界都在仓库中给出可检查的实现与证据。
 
 ## 当前结果
 
@@ -36,15 +36,15 @@ Tiny Shakespeare 正式基线固定 818,432 个参数、seed 42、2,000 步和 4
 - [阶段三工具调用与 Agent 验收](docs/stage2_agent_tools.md)
 - [阶段二 Agent 评测集](docs/stage2_agent_eval.md)
 - [阶段四 0.5B Agent 基线](docs/stage4_agent_baseline.md)
-- [求职项目总路线图](docs/career_project_roadmap.md)
+- [研究与工程路线图](docs/research_roadmap.md)
 - [研究与工程日志](docs/research_log.md)
 - [P0/P1 第一人称研究与验收报告](docs/p0_p1_completion.md)
 - [P2–P5 第一人称完成报告](docs/p2_p5_completion.md)
-- [P0–P5 求职项目闭环审计](docs/p0_p5_closed_loop.md)
+- [P0–P5 阶段闭环审计](docs/p0_p5_closed_loop.md)
 - [P6/P7 第一人称研究与验收报告](docs/p6_p7_completion.md)
-- [P0–P7 求职项目闭环审计](docs/p0_p7_closed_loop.md)
+- [P0–P7 阶段闭环审计](docs/p0_p7_closed_loop.md)
 - [P8–P10 第一人称研究与验收报告](docs/p8_p10_completion.md)
-- [P0–P10 求职项目闭环审计](docs/p0_p10_closed_loop.md)
+- [P0–P10 整体闭环审计](docs/p0_p10_closed_loop.md)
 - [3B QLoRA 训练与重载验收说明](docs/p4_3b_qlora_training_summary.md)
 - [冻结测试集人工审核表](docs/frozen_eval_review_checklist.md)
 
@@ -309,11 +309,11 @@ pyproject.toml / uv.lock  环境、工具配置与依赖锁
 15. P9 受控 OCR/ASR/TTS 多模态级联与真实本地 smoke
 16. P10 私有领域治理、授权与请求级 PEFT Adapter 隔离
 
-详细路线见 [docs/learning_plan.md](docs/learning_plan.md)。P0–P10 已完成一次端到端求职项目
+详细路线见 [docs/learning_plan.md](docs/learning_plan.md)。P0–P10 已完成一次端到端研究工程
 闭环；其中 P6 的模型效果、P8 的长训练、P9 的真实复杂场景和 P10 的领域训练均保留为条件
 验收或后续工作，阶段编号不等于生产成熟度。
 
-从 2026-08-25 起，后续工作按[求职项目总路线图](docs/career_project_roadmap.md)推进，
+从 2026-08-25 起，后续工作按[研究与工程路线图](docs/research_roadmap.md)推进，
 所有训练、解码、RAG 和服务改动统一记入[研究与工程日志](docs/research_log.md)。路线优先
 完成纯文本 Agent、监督微调、冻结评测、RAG、可观测服务和 Word/PDF 工具；图像、语音
 以及私有领域 Adapter 只在文本主线稳定后扩展。新增模型、数据、缓存和实验产物统一放在
