@@ -1,6 +1,5 @@
 """KV Cache correctness tests for stage five."""
 
-import pytest
 import torch
 
 from minigpt.generation import generate
@@ -113,18 +112,26 @@ def test_cache_and_attention_weights_can_be_returned_together() -> None:
     assert weights[0].shape == (1, model.num_heads, 3, 3)
 
 
-def test_cache_rejects_context_overflow() -> None:
+def test_cache_rolls_context_window_on_overflow() -> None:
     model = make_model(block_size=4)
     prompt = torch.tensor([[1, 2, 3]])
 
-    with pytest.raises(ValueError, match="prompt_length"):
-        generate(
-            model,
-            prompt,
-            max_new_tokens=2,
-            block_size=model.block_size,
-            use_kv_cache=True,
-        )
+    baseline = generate(
+        model,
+        prompt,
+        max_new_tokens=5,
+        block_size=model.block_size,
+        use_kv_cache=False,
+    )
+    cached = generate(
+        model,
+        prompt,
+        max_new_tokens=5,
+        block_size=model.block_size,
+        use_kv_cache=True,
+    )
+
+    assert torch.equal(cached, baseline)
 
 
 def test_compile_model_disabled_preserves_original_module() -> None:

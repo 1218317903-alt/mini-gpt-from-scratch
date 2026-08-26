@@ -334,6 +334,37 @@ def validate_block_size(block_size: int) -> int:
     return block_size
 
 
+def validate_eos_token_id(eos_token_id: int | None) -> int | None:
+    """Validate an optional end-of-sequence Token ID."""
+    if eos_token_id is None:
+        return None
+    if type(eos_token_id) is not int:
+        raise TypeError("eos_token_id must be an integer or None.")
+    if eos_token_id < 0:
+        raise ValueError("eos_token_id cannot be negative.")
+    return eos_token_id
+
+
+def _apply_eos_stopping(
+    next_token: torch.Tensor,
+    finished: torch.Tensor,
+    *,
+    eos_token_id: int | None,
+    vocab_size: int,
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """Keep finished rows on EOS and update the per-row stop mask."""
+    if eos_token_id is None:
+        return next_token, finished
+    if eos_token_id >= vocab_size:
+        raise ValueError("eos_token_id must be smaller than the vocabulary size.")
+    next_token = torch.where(
+        finished,
+        torch.full_like(next_token, eos_token_id),
+        next_token,
+    )
+    return next_token, finished | next_token.eq(eos_token_id)
+
+
 def _select_next_token(
     last_logits: torch.Tensor,
     *,
@@ -366,23 +397,34 @@ def _generate_without_cache(
     top_k: int | None,
     top_p: float | None,
     generator: torch.Generator | None,
+    eos_token_id: int | None,
 ) -> torch.Tensor:
     """Baseline generation that recomputes the visible context each step."""
+    finished = torch.zeros(generated.size(0), dtype=torch.bool, device=generated.device)
     for _ in range(max_new_tokens):
         context = generated[:, -block_size:]
         logits = model(context)
+        last_logits = select_last_logits(logits)
         next_token = _select_next_token(
-            select_last_logits(logits),
+            last_logits,
             do_sample=do_sample,
             temperature=temperature,
             top_k=top_k,
             top_p=top_p,
             generator=generator,
         )
+        next_token, finished = _apply_eos_stopping(
+            next_token,
+            finished,
+            eos_token_id=eos_token_id,
+            vocab_size=last_logits.size(-1),
+        )
         generated = torch.cat(
             (generated, next_token.unsqueeze(1)),
             dim=1,
         )
+        if finished.all().item():
+            break
     return generated
 
 
@@ -397,34 +439,46 @@ def _generate_with_cache(
     top_k: int | None,
     top_p: float | None,
     generator: torch.Generator | None,
+    eos_token_id: int | None,
 ) -> torch.Tensor:
-    """Generate by one Prompt prefill followed by one-Token decode steps."""
-    total_length = generated.size(1) + max_new_tokens
-    if total_length > block_size:
-        raise ValueError(
-            "KV Cache 要求 prompt_length + max_new_tokens 不超过 block_size。"
-        )
-
-    logits, past_key_values = model(generated, use_cache=True)
+    """Generate with cached decode and rolling-window re-prefill on overflow."""
+    context = generated[:, -block_size:]
+    logits, past_key_values = model(context, use_cache=True)
+    cached_length = context.size(1)
+    finished = torch.zeros(generated.size(0), dtype=torch.bool, device=generated.device)
     for step in range(max_new_tokens):
+        last_logits = select_last_logits(logits)
         next_token = _select_next_token(
-            select_last_logits(logits),
+            last_logits,
             do_sample=do_sample,
             temperature=temperature,
             top_k=top_k,
             top_p=top_p,
             generator=generator,
         )
+        next_token, finished = _apply_eos_stopping(
+            next_token,
+            finished,
+            eos_token_id=eos_token_id,
+            vocab_size=last_logits.size(-1),
+        )
         generated = torch.cat(
             (generated, next_token.unsqueeze(1)),
             dim=1,
         )
-        if step + 1 < max_new_tokens:
+        if finished.all().item():
+            break
+        if step + 1 < max_new_tokens and cached_length < block_size:
             logits, past_key_values = model(
                 next_token.unsqueeze(1),
                 past_key_values=past_key_values,
                 use_cache=True,
             )
+            cached_length += 1
+        elif step + 1 < max_new_tokens:
+            context = generated[:, -block_size:]
+            logits, past_key_values = model(context, use_cache=True)
+            cached_length = context.size(1)
     return generated
 
 
@@ -440,11 +494,13 @@ def generate(
     top_p: float | None = None,
     use_kv_cache: bool = False,
     generator: torch.Generator | None = None,
+    eos_token_id: int | None = None,
 ) -> torch.Tensor:
     """Generate a sequence containing the prompt and new Token IDs."""
     _validate_model_input(model, input_ids)
     max_new_tokens = validate_max_new_tokens(max_new_tokens)
     block_size = validate_block_size(block_size)
+    eos_token_id = validate_eos_token_id(eos_token_id)
 
     if not isinstance(do_sample, bool):
         raise TypeError("do_sample must be a bool.")
@@ -475,6 +531,7 @@ def generate(
                 top_k=top_k,
                 top_p=top_p,
                 generator=generator,
+                eos_token_id=eos_token_id,
             )
         return _generate_without_cache(
             model,
@@ -486,4 +543,5 @@ def generate(
             top_k=top_k,
             top_p=top_p,
             generator=generator,
+            eos_token_id=eos_token_id,
         )

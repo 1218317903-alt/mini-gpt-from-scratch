@@ -219,6 +219,35 @@ def test_generate_rejects_empty_prompt_and_supports_zero_new_tokens() -> None:
     assert torch.equal(generated, prompt)
 
 
+def test_generate_stops_when_all_rows_reach_eos() -> None:
+    model = TrackingLogitModel(torch.tensor([0.0, 1.0, 5.0]))
+    prompt = torch.tensor([[0], [1]])
+
+    generated = generate(
+        model,
+        prompt,
+        max_new_tokens=10,
+        block_size=4,
+        eos_token_id=2,
+    )
+
+    assert generated.shape == (2, 2)
+    assert generated[:, -1].tolist() == [2, 2]
+
+
+def test_generate_validates_eos_token_id_against_vocabulary() -> None:
+    model = TrackingLogitModel(torch.tensor([0.0, 1.0]))
+
+    with pytest.raises(ValueError, match="vocabulary size"):
+        generate(
+            model,
+            torch.tensor([[0]]),
+            max_new_tokens=1,
+            block_size=4,
+            eos_token_id=2,
+        )
+
+
 def test_generated_ids_can_be_decoded() -> None:
     tokenizer = CharacterTokenizer("abc")
     model = TrackingLogitModel(torch.tensor([0.0, 1.0, 2.0, 3.0]))
