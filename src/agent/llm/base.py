@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Callable, Iterator, Sequence
 from dataclasses import dataclass, field
 from typing import Literal, Protocol
 
@@ -23,6 +23,19 @@ class ChatResult:
     model: str
     duration_ms: float = 0.0
     tool_calls: tuple[ToolCall, ...] = field(default_factory=tuple)
+
+
+@dataclass(frozen=True)
+class ChatStreamChunk:
+    """One backend-independent streaming text or terminal event."""
+
+    text: str = ""
+    done: bool = False
+    prompt_tokens: int = 0
+    generated_tokens: int = 0
+    finish_reason: Literal["length", "stop", "cancelled"] | None = None
+    model: str = ""
+    duration_ms: float = 0.0
 
 
 class ChatModel(Protocol):
@@ -51,3 +64,22 @@ class ChatModel(Protocol):
         seed: int | None,
     ) -> ChatResult:
         """Generate one assistant response, optionally with tools."""
+
+
+class StreamingChatModel(ChatModel, Protocol):
+    """Optional incremental generation contract used by conversation SSE."""
+
+    def stream_chat(
+        self,
+        messages: Sequence[Message],
+        tools: Sequence[ToolSchema] | None = None,
+        *,
+        max_new_tokens: int,
+        temperature: float,
+        top_k: int | None,
+        top_p: float | None,
+        greedy: bool,
+        seed: int | None,
+        is_cancelled: Callable[[], bool] | None = None,
+    ) -> Iterator[ChatStreamChunk]:
+        """Yield incremental text and one terminal chunk."""

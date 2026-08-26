@@ -3,16 +3,22 @@
 from __future__ import annotations
 
 import time
-from collections.abc import Sequence
+from collections.abc import Callable, Iterator, Sequence
 from pathlib import Path
-from threading import Lock
+from threading import Lock, Thread
 from typing import Any
 
 import torch
 from peft import PeftModel
-from transformers import AutoModelForCausalLM, AutoTokenizer
+from transformers import (
+    AutoModelForCausalLM,
+    AutoTokenizer,
+    StoppingCriteria,
+    StoppingCriteriaList,
+    TextIteratorStreamer,
+)
 
-from agent.llm.base import ChatResult
+from agent.llm.base import ChatResult, ChatStreamChunk
 from agent.llm.tool_format import parse_tool_calls, prepare_messages
 from agent.messages import Message, ToolSchema, message_payload
 from minigpt_service.config import ChatServiceConfig
@@ -257,6 +263,141 @@ class HuggingFaceChatModel:
                 if was_training:
                     self._model.train()
 
+    def stream_chat(
+        self,
+        messages: Sequence[Message],
+        tools: Sequence[ToolSchema] | None = None,
+        *,
+        max_new_tokens: int,
+        temperature: float,
+        top_k: int | None,
+        top_p: float | None,
+        greedy: bool,
+        seed: int | None,
+        is_cancelled: Callable[[], bool] | None = None,
+    ) -> Iterator[ChatStreamChunk]:
+        """Generate incremental decoded text and stop at a decode boundary."""
+        if not self.is_ready or self._model is None or self._tokenizer is None:
+            raise RuntimeError("Hugging Face chat model is not ready.")
+        if max_new_tokens <= 0:
+            raise ValueError("max_new_tokens must be greater than zero.")
+        if temperature <= 0:
+            raise ValueError("temperature must be greater than zero.")
+        if top_k is not None and top_k < 0:
+            raise ValueError("top_k must be zero, positive, or null.")
+        if top_p is not None and not 0 < top_p <= 1:
+            raise ValueError("top_p must be in the interval (0, 1].")
+
+        tool_list = tuple(tools) if tools else None
+        prepared = prepare_messages(messages, tool_list)
+        payload = [message_payload(message) for message in prepared]
+        inputs = self._apply_chat_template(payload, tool_list)
+        prompt_tokens = int(inputs["input_ids"].shape[-1])
+        if prompt_tokens > self.config.max_input_tokens:
+            raise ValueError(
+                "Conversation exceeds max_input_tokens "
+                f"({self.config.max_input_tokens})."
+            )
+        context_limit = getattr(self._model.config, "max_position_embeddings", None)
+        if isinstance(context_limit, int) and (
+            prompt_tokens + max_new_tokens > context_limit
+        ):
+            raise ValueError(
+                "Conversation plus max_new_tokens exceeds the model context "
+                f"window ({context_limit})."
+            )
+
+        generation_kwargs: dict[str, Any] = {
+            "max_new_tokens": max_new_tokens,
+            "do_sample": not greedy,
+            "use_cache": True,
+            "pad_token_id": self._tokenizer.pad_token_id,
+        }
+        eos_token_id = self._eos_token_ids()
+        if eos_token_id is not None:
+            generation_kwargs["eos_token_id"] = eos_token_id
+        if not greedy:
+            generation_kwargs["temperature"] = temperature
+            if top_k is not None and top_k > 0:
+                generation_kwargs["top_k"] = top_k
+            if top_p is not None:
+                generation_kwargs["top_p"] = top_p
+            if seed is not None:
+                generation_kwargs["generator"] = torch.Generator(
+                    device=self.device
+                ).manual_seed(seed)
+
+        cancellation = is_cancelled or (lambda: False)
+        generation_kwargs["stopping_criteria"] = StoppingCriteriaList(
+            [_CallbackStoppingCriteria(cancellation)]
+        )
+        streamer = TextIteratorStreamer(
+            self._tokenizer,
+            skip_prompt=True,
+            skip_special_tokens=True,
+            timeout=None,
+        )
+        generation_kwargs["streamer"] = streamer
+        error: list[BaseException] = []
+        started = time.perf_counter()
+        model = self._model
+        assert model is not None
+
+        def generate_in_thread() -> None:
+            try:
+                with torch.inference_mode(), self._inference_lock:
+                    model.generate(**inputs, **generation_kwargs)
+            except BaseException as generated_error:
+                error.append(generated_error)
+                streamer.on_finalized_text("", stream_end=True)
+
+        worker = Thread(target=generate_in_thread, daemon=True)
+        worker.start()
+        pieces: list[str] = []
+        for text in streamer:
+            if text:
+                pieces.append(text)
+                yield ChatStreamChunk(text=text, model=self.model_name)
+        worker.join(timeout=5.0)
+        if worker.is_alive():
+            raise RuntimeError("Streaming generation did not stop in time.")
+        if error:
+            raise RuntimeError("Streaming generation failed.") from error[0]
+
+        complete_text = "".join(pieces).strip()
+        encoded = self._tokenizer.encode(complete_text, add_special_tokens=False)
+        duration_ms = (time.perf_counter() - started) * 1000
+        cancelled = cancellation()
+        yield ChatStreamChunk(
+            done=True,
+            prompt_tokens=prompt_tokens,
+            generated_tokens=len(encoded),
+            finish_reason=(
+                "cancelled"
+                if cancelled
+                else "stop"
+                if len(encoded) < max_new_tokens
+                else "length"
+            ),
+            model=self.model_name,
+            duration_ms=round(duration_ms, 3),
+        )
+
+    def count_chat_tokens(self, messages: Sequence[Message]) -> int:
+        """Count the exact chat-template input tokens for context budgeting."""
+        if not self.is_ready or self._tokenizer is None:
+            raise RuntimeError("Hugging Face chat model is not ready.")
+        prepared = prepare_messages(messages, None)
+        payload = [message_payload(message) for message in prepared]
+        encoded = self._tokenizer.apply_chat_template(
+            payload,
+            tokenize=True,
+            add_generation_prompt=True,
+            return_dict=True,
+            return_tensors="pt",
+        )
+        return int(encoded["input_ids"].shape[-1])
+
     def _apply_chat_template(
         self,
         payload: list[dict[str, Any]],
@@ -356,3 +497,19 @@ def create_huggingface_chat_model(
 ) -> HuggingFaceChatModel:
     """Construct the backend without loading weights yet."""
     return HuggingFaceChatModel(config, device)
+
+
+class _CallbackStoppingCriteria(StoppingCriteria):
+    """Stop generation when the service cancellation callback becomes true."""
+
+    def __init__(self, callback: Callable[[], bool]) -> None:
+        self._callback = callback
+
+    def __call__(
+        self,
+        input_ids: torch.LongTensor,
+        scores: torch.FloatTensor,
+        **kwargs: Any,
+    ) -> bool:
+        del input_ids, scores, kwargs
+        return self._callback()

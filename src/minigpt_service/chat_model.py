@@ -2,12 +2,13 @@
 
 from typing import Any
 
-from agent.llm.base import ChatFinishReason, ChatModel, ChatResult
+from agent.llm.base import ChatFinishReason, ChatModel, ChatResult, ChatStreamChunk
 
 __all__ = [  # noqa: F822
     "ChatFinishReason",
     "ChatModel",
     "ChatResult",
+    "ChatStreamChunk",
     "HuggingFaceChatModel",
     "MiniGPTChatModel",
     "create_huggingface_chat_model",

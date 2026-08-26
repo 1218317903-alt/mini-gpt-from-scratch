@@ -2,7 +2,7 @@
 
 from typing import Any
 
-from agent.llm.base import ChatFinishReason, ChatModel, ChatResult
+from agent.llm.base import ChatFinishReason, ChatModel, ChatResult, ChatStreamChunk
 from agent.llm.tool_format import (
     parse_tool_calls,
     prepare_messages,
@@ -13,6 +13,7 @@ __all__ = [
     "ChatFinishReason",
     "ChatModel",
     "ChatResult",
+    "ChatStreamChunk",
     "HuggingFaceChatModel",
     "MiniGPTChatModel",
     "create_huggingface_chat_model",

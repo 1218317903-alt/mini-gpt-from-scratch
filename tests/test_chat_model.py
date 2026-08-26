@@ -40,6 +40,9 @@ class _FakeTokenizer:
             )
         return "ok"
 
+    def encode(self, text: str, **_: object) -> list[int]:
+        return list(range(len(text.split())))
+
     def convert_tokens_to_ids(self, token: str) -> int:
         if token == "<|im_end|>":
             return 99
@@ -61,8 +64,14 @@ class _FakeModel:
         self.training = True
         return self
 
-    def generate(self, **_: object) -> torch.Tensor:
+    def generate(self, **kwargs: object) -> torch.Tensor:
         self.generate_calls += 1
+        streamer = kwargs.get("streamer")
+        if streamer is not None:
+            streamer.put(torch.tensor([[10, 11]]))
+            streamer.put(torch.tensor([20]))
+            streamer.put(torch.tensor([99]))
+            streamer.end()
         return torch.tensor([self.output_ids])
 
 
@@ -102,6 +111,46 @@ def test_chat_model_generates_and_detects_eos() -> None:
     assert result.finish_reason == "stop"
     assert result.model == "fake-model"
     assert result.duration_ms >= 0
+
+
+def test_chat_model_streams_text_and_terminal_usage() -> None:
+    backend = _loaded_model()
+
+    chunks = list(
+        backend.stream_chat(
+            [Message(role="user", content="hello")],
+            max_new_tokens=4,
+            temperature=0.7,
+            top_k=None,
+            top_p=None,
+            greedy=True,
+            seed=None,
+        )
+    )
+
+    assert any(chunk.text for chunk in chunks)
+    assert chunks[-1].done is True
+    assert chunks[-1].prompt_tokens == 2
+    assert chunks[-1].model == "fake-model"
+
+
+def test_chat_model_stream_honors_cancellation_callback() -> None:
+    backend = _loaded_model()
+
+    chunks = list(
+        backend.stream_chat(
+            [Message(role="user", content="hello")],
+            max_new_tokens=4,
+            temperature=0.7,
+            top_k=None,
+            top_p=None,
+            greedy=True,
+            seed=None,
+            is_cancelled=lambda: True,
+        )
+    )
+
+    assert chunks[-1].finish_reason == "cancelled"
 
 
 def test_chat_model_keeps_three_turn_context() -> None:

@@ -3,12 +3,12 @@
 from __future__ import annotations
 
 import time
-from collections.abc import Sequence
+from collections.abc import Callable, Iterator, Sequence
 from threading import Lock
 
 import torch
 
-from agent.llm.base import ChatResult
+from agent.llm.base import ChatResult, ChatStreamChunk
 from agent.llm.tool_format import parse_tool_calls, prepare_messages
 from agent.messages import Message, ToolSchema
 from minigpt.generation import generate
@@ -114,6 +114,55 @@ class MiniGPTChatModel:
             duration_ms=round(duration_ms, 3),
             tool_calls=parse_tool_calls(text),
         )
+
+    def stream_chat(
+        self,
+        messages: Sequence[Message],
+        tools: Sequence[ToolSchema] | None = None,
+        *,
+        max_new_tokens: int,
+        temperature: float,
+        top_k: int | None,
+        top_p: float | None,
+        greedy: bool,
+        seed: int | None,
+        is_cancelled: Callable[[], bool] | None = None,
+    ) -> Iterator[ChatStreamChunk]:
+        """Expose a compatible one-block stream for the research backend."""
+        if is_cancelled is not None and is_cancelled():
+            yield ChatStreamChunk(
+                done=True,
+                finish_reason="cancelled",
+                model=self.model_name,
+            )
+            return
+        result = self.chat(
+            messages,
+            tools,
+            max_new_tokens=max_new_tokens,
+            temperature=temperature,
+            top_k=top_k,
+            top_p=top_p,
+            greedy=greedy,
+            seed=seed,
+        )
+        if result.text:
+            yield ChatStreamChunk(text=result.text, model=result.model)
+        yield ChatStreamChunk(
+            done=True,
+            prompt_tokens=result.prompt_tokens,
+            generated_tokens=result.generated_tokens,
+            finish_reason=result.finish_reason,
+            model=result.model,
+            duration_ms=result.duration_ms,
+        )
+
+    def count_chat_tokens(self, messages: Sequence[Message]) -> int:
+        """Count rendered prompt IDs for the research backend."""
+        if not self.is_ready or self.service.tokenizer is None:
+            raise RuntimeError("MiniGPT chat model is not ready.")
+        prompt = render_minigpt_prompt(prepare_messages(messages, None))
+        return len(self.service.tokenizer.encode(prompt, allow_unknown=True))
 
 
 def render_minigpt_prompt(messages: Sequence[Message]) -> str:
