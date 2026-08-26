@@ -5,6 +5,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from minigpt.bpe_tokenizer import BPETokenizer
+
 
 class CharacterTokenizer:
     """在字符和 Token ID 之间转换。"""
@@ -106,3 +108,38 @@ class CharacterTokenizer:
         tokenizer.stoi = {token: index for index, token in enumerate(raw_itos)}
         tokenizer.unk_id = tokenizer.stoi[cls.UNK_TOKEN]
         return tokenizer
+
+
+ProjectTokenizer = CharacterTokenizer | BPETokenizer
+
+
+def train_tokenizer(
+    training_text: str,
+    *,
+    tokenizer_type: str,
+    vocab_size: int | None = None,
+) -> ProjectTokenizer:
+    """Train the Tokenizer selected by the project data configuration."""
+    if tokenizer_type == "character":
+        return CharacterTokenizer(training_text)
+    if tokenizer_type == "bpe":
+        if vocab_size is None:
+            raise ValueError("BPE Tokenizer requires vocab_size.")
+        return BPETokenizer.train(training_text, vocab_size=vocab_size)
+    raise ValueError("tokenizer_type must be character or bpe.")
+
+
+def load_tokenizer(path: Path, *, tokenizer_type: str) -> ProjectTokenizer:
+    """Load the Tokenizer selected by the project data configuration."""
+    if tokenizer_type == "character":
+        return CharacterTokenizer.load(path)
+    if tokenizer_type == "bpe":
+        return BPETokenizer.load(path)
+    raise ValueError("tokenizer_type must be character or bpe.")
+
+
+def decode_token_ids(tokenizer: ProjectTokenizer, token_ids: list[int]) -> str:
+    """Decode IDs while hiding BPE control tokens from user-facing text."""
+    if isinstance(tokenizer, BPETokenizer):
+        return tokenizer.decode(token_ids, skip_special_tokens=True)
+    return tokenizer.decode(token_ids)

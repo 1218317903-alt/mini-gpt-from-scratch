@@ -1,13 +1,20 @@
-"""划分文本并保存训练集词表。"""
+"""划分文本并训练配置所选择的 Tokenizer。"""
 
+import argparse
 from pathlib import Path
 
 from minigpt.config import load_data_config
-from minigpt.tokenizer import CharacterTokenizer
+from minigpt.tokenizer import train_tokenizer
 from minigpt.utils import read_utf8_text, write_utf8_text
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-CONFIG_PATH = PROJECT_ROOT / "configs" / "tiny_shakespeare.yaml"
+DEFAULT_CONFIG_PATH = PROJECT_ROOT / "configs" / "tiny_shakespeare.yaml"
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="准备语料切分和 Tokenizer。")
+    parser.add_argument("--config", type=Path, default=DEFAULT_CONFIG_PATH)
+    return parser.parse_args()
 
 
 def read_text(path: Path) -> str:
@@ -48,7 +55,8 @@ def save_text(path: Path, text: str) -> None:
 
 def main() -> None:
     """生成三个文本数据集和训练集词表。"""
-    config = load_data_config(CONFIG_PATH)
+    args = parse_args()
+    config = load_data_config(args.config.resolve())
     text = read_text(config.raw_path)
 
     train_text, val_text, test_text = split_text(
@@ -61,7 +69,11 @@ def main() -> None:
     save_text(config.val_path, val_text)
     save_text(config.test_path, test_text)
 
-    tokenizer = CharacterTokenizer(train_text)
+    tokenizer = train_tokenizer(
+        train_text,
+        tokenizer_type=config.tokenizer_type,
+        vocab_size=config.tokenizer_vocab_size,
+    )
     tokenizer.save(config.tokenizer_path)
 
     print(f"原始文本：{len(text)}")
@@ -69,6 +81,8 @@ def main() -> None:
     print(f"验证集：{len(val_text)}")
     print(f"测试集：{len(test_text)}")
     print(f"词表大小：{tokenizer.vocab_size}")
+    print(f"Tokenizer：{config.tokenizer_type}")
+    print(f"Packing：{config.packing}")
 
 
 if __name__ == "__main__":

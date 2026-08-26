@@ -11,6 +11,8 @@ class BPETokenizer:
     """在 Unicode 字符序列上学习 BPE 合并规则。"""
 
     UNK_TOKEN = "<unk>"
+    PAD_TOKEN = "<pad>"
+    EOS_TOKEN = "<eos>"
 
     def __init__(self, vocabulary: list[str], merges: list[tuple[str, str]]) -> None:
         if not vocabulary or vocabulary[0] != self.UNK_TOKEN:
@@ -21,6 +23,8 @@ class BPETokenizer:
         self.stoi = {token: index for index, token in enumerate(self.itos)}
         self.merges = list(merges)
         self.unk_id = 0
+        self.pad_id = self.stoi.get(self.PAD_TOKEN)
+        self.eos_id = self.stoi.get(self.EOS_TOKEN)
 
     @classmethod
     def train(cls, text: str, vocab_size: int) -> BPETokenizer:
@@ -28,11 +32,12 @@ class BPETokenizer:
         if not isinstance(text, str) or not text:
             raise ValueError("训练文本必须是非空字符串。")
         base_tokens = sorted(set(text))
-        if vocab_size < len(base_tokens) + 1:
+        special_tokens = [cls.UNK_TOKEN, cls.PAD_TOKEN, cls.EOS_TOKEN]
+        if vocab_size < len(base_tokens) + len(special_tokens):
             raise ValueError("vocab_size 小于字符基础词表。")
 
         sequence = list(text)
-        vocabulary = [cls.UNK_TOKEN, *base_tokens]
+        vocabulary = [*special_tokens, *base_tokens]
         merges: list[tuple[str, str]] = []
         while len(vocabulary) < vocab_size and len(sequence) >= 2:
             counts = Counter(zip(sequence, sequence[1:], strict=False))
@@ -101,14 +106,26 @@ class BPETokenizer:
             for token in self._tokenize(text, allow_unknown=allow_unknown)
         ]
 
-    def decode(self, token_ids: list[int]) -> str:
+    def decode(
+        self,
+        token_ids: list[int],
+        *,
+        skip_special_tokens: bool = False,
+    ) -> str:
         pieces: list[str] = []
         for token_id in token_ids:
             if type(token_id) is not int:
                 raise TypeError("每个 token_id 必须是 int。")
             if not 0 <= token_id < self.vocab_size:
                 raise ValueError(f"非法 token ID：{token_id}。")
-            pieces.append(self.itos[token_id])
+            token = self.itos[token_id]
+            if skip_special_tokens and token in {
+                self.UNK_TOKEN,
+                self.PAD_TOKEN,
+                self.EOS_TOKEN,
+            }:
+                continue
+            pieces.append(token)
         return "".join(pieces)
 
     def save(self, path: Path) -> None:

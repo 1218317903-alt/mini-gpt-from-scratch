@@ -5,6 +5,8 @@ from __future__ import annotations
 import torch
 from torch.utils.data import Dataset
 
+from minigpt.tokenizer import ProjectTokenizer
+
 
 class CharacterLanguageModelDataset(Dataset[tuple[torch.Tensor, torch.Tensor]]):
     """将连续 Token ID 转换为 x 和 y。"""
@@ -109,3 +111,50 @@ class PackedLanguageModelDataset(Dataset[tuple[torch.Tensor, torch.Tensor]]):
         valid = sum(int((targets != -100).sum()) for _, targets in self.blocks)
         total = sum(targets.numel() for _, targets in self.blocks)
         return valid / total
+
+
+LanguageModelDataset = CharacterLanguageModelDataset | PackedLanguageModelDataset
+
+
+def split_text_samples(text: str, separator: str) -> list[str]:
+    """Split a corpus into non-empty logical samples for sequence packing."""
+    if not isinstance(text, str) or not text:
+        raise ValueError("text 必须是非空字符串。")
+    if not isinstance(separator, str) or not separator:
+        raise ValueError("separator 必须是非空字符串。")
+    samples = [sample for sample in text.split(separator) if sample]
+    return samples or [text]
+
+
+def build_language_model_dataset(
+    text: str,
+    tokenizer: ProjectTokenizer,
+    *,
+    block_size: int,
+    packing: bool,
+    sample_separator: str,
+    allow_unknown: bool = False,
+) -> LanguageModelDataset:
+    """Build either the legacy continuous stream or EOS-aware packed data."""
+    if not packing:
+        return CharacterLanguageModelDataset(
+            tokenizer.encode(text, allow_unknown=allow_unknown),
+            block_size,
+        )
+    eos_id = getattr(tokenizer, "eos_id", None)
+    pad_id = getattr(tokenizer, "pad_id", None)
+    if eos_id is None or pad_id is None:
+        raise ValueError("Packing requires a Tokenizer with EOS and PAD IDs.")
+    sequences = [
+        tokenizer.encode(sample, allow_unknown=allow_unknown)
+        for sample in split_text_samples(text, sample_separator)
+    ]
+    sequences = [sequence for sequence in sequences if sequence]
+    if not sequences:
+        raise ValueError("Packing did not produce any non-empty Token sequences.")
+    return PackedLanguageModelDataset(
+        sequences,
+        block_size,
+        eos_id=eos_id,
+        pad_id=pad_id,
+    )
